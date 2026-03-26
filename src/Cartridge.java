@@ -67,17 +67,17 @@ class CartridgeHeader {
 
     public String humanReadable() {
         String licensee;
-        int licensee_code;
+        String licensee_code;
         if (old_licensee_code_raw == 0x33) {
             String new_licensee_str = new String(new_licensee_code_raw, StandardCharsets.US_ASCII);
-            licensee_code = Integer.parseInt(new_licensee_str);
-            licensee = EmuLookupTables.new_licensees.getOrDefault(licensee_code, "<UNKNOWN>");
+            licensee_code = new_licensee_str;
+            licensee = EmuLookupTables.new_licensees.getOrDefault(new_licensee_str, "<UNKNOWN>");
         } else {
-            licensee_code = old_licensee_code_raw;
+            licensee_code = String.format("0x%1$02X", old_licensee_code_raw);
             licensee = EmuLookupTables.old_licensees.getOrDefault(licensee_code, "<UNKNOWN>");
         }
         return "Title: " + new String(title_raw, StandardCharsets.US_ASCII) +
-                "\nLicensee: " + licensee + "(0x" + String.format("%1$02X", licensee_code) + ")" +
+                "\nLicensee: " + licensee + "(" + licensee_code + ")" +
                 "\nCartridge Type: " + EmuLookupTables.cartridge_types[cartridge_type_raw] + "(0x" + String.format("%1$02X", cartridge_type_raw) + ")" +
                 "\nSGB flag: " + (sgb_flag_raw == 0x3 ? "SET" : "NOT SET") +
                 "\nROM Size: " + (32 * (1 << ROM_size_raw)) + " KiB (" + ((1 << ROM_size_raw) * 2) + " Banks)" +
