@@ -76,7 +76,7 @@ class CartridgeHeader {
             licensee_code = String.format("0x%1$02X", old_licensee_code_raw);
             licensee = EmuLookupTables.old_licensees.getOrDefault(licensee_code, "<UNKNOWN>");
         }
-        return "Title: " + new String(title_raw, StandardCharsets.US_ASCII) +
+        return ("Title: " + new String(title_raw, StandardCharsets.US_ASCII) +
                 "\nLicensee: " + licensee + "(" + licensee_code + ")" +
                 "\nCartridge Type: " + EmuLookupTables.cartridge_types[cartridge_type_raw] + "(0x" + String.format("%1$02X", cartridge_type_raw) + ")" +
                 "\nSGB flag: " + (sgb_flag_raw == 0x3 ? "SET" : "NOT SET") +
@@ -84,7 +84,7 @@ class CartridgeHeader {
                 "\nRAM Size: " + EmuLookupTables.RAM_sizes.getOrDefault((int) RAM_size_raw, 0) + " KiB" +
                 "\nRegion: " + ((int) region_code_raw == 0 ? "JP/Global" : "Global Only") +
                 "\nROM Ver: " + (int) ROM_ver_raw + " (0x" + String.format("%1$02X", ROM_ver_raw) + ")" +
-                "\nHeader Checksum: " + "0x" + String.format("%1$02X", header_checksum_raw) + (checksum_passed ? " (PASSED)" : "(FAILED)");
+                "\nHeader Checksum: " + "0x" + String.format("%1$02X", header_checksum_raw) + (checksum_passed ? " (PASSED)" : "(FAILED)")).replace("\0","");
     }
 }
 
