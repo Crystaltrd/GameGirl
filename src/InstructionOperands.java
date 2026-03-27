@@ -6,7 +6,7 @@ import lombok.ToString;
 @Getter
 @ToString
 public class InstructionOperands {
-    private String name;
+    private OperandType name;
     private boolean immediate;
     private boolean increment = false;
     private boolean decrement = false;

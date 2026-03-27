@@ -97,10 +97,10 @@ public class Cartridge {
         header = new CartridgeHeader(data);
     }
     
-    public byte read(short address){
+    public byte read(char address){
         return data[address];
     }
-    public void write(short address,byte value){
+    public void write(char address,byte value){
         data[address] = value;
     } 
 }
