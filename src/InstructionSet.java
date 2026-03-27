@@ -17,5 +17,10 @@ public class InstructionSet {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(opcodesFile, InstructionSet.class);
     }
-
+    public Instruction getUnprefixedInstruction(String opcode){
+        return unprefixed.getOrDefault(opcode, new Instruction());
+    }
+    public Instruction getCBPrefixedInstruction(String opcode){
+        return cbprefixed.getOrDefault(opcode, new Instruction());
+    }
 }
