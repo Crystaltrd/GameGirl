@@ -96,4 +96,11 @@ public class Cartridge {
         data = Files.readAllBytes(rom_file.toPath());
         header = new CartridgeHeader(data);
     }
+    
+    public byte read(short address){
+        return data[address];
+    }
+    public void write(short address,byte value){
+        data[address] = value;
+    } 
 }
