@@ -20,6 +20,7 @@ class CartridgeHeader {
     public byte header_checksum_raw;
     public boolean checksum_passed;
     public byte[] global_checksum_raw = new byte[0x014F - 0x014E + 1];
+    public byte[] external_rom;
 
 
     CartridgeHeader(byte[] data) {
@@ -41,6 +42,7 @@ class CartridgeHeader {
             checksum = (byte) (checksum - data[address] - 1);
         }
         checksum_passed = checksum == header_checksum_raw;
+        external_rom = new byte[1024 * EmuLookupTables.RAM_sizes.getOrDefault((int) RAM_size_raw, 0)];
     }
 
 
@@ -84,7 +86,7 @@ class CartridgeHeader {
                 "\nRAM Size: " + EmuLookupTables.RAM_sizes.getOrDefault((int) RAM_size_raw, 0) + " KiB" +
                 "\nRegion: " + ((int) region_code_raw == 0 ? "JP/Global" : "Global Only") +
                 "\nROM Ver: " + (int) ROM_ver_raw + " (0x" + String.format("%1$02X", ROM_ver_raw) + ")" +
-                "\nHeader Checksum: " + "0x" + String.format("%1$02X", header_checksum_raw) + (checksum_passed ? " (PASSED)" : "(FAILED)")).replace("\0","");
+                "\nHeader Checksum: " + "0x" + String.format("%1$02X", header_checksum_raw) + (checksum_passed ? " (PASSED)" : "(FAILED)")).replace("\0", "");
     }
 }
 
@@ -96,11 +98,12 @@ public class Cartridge {
         data = Files.readAllBytes(rom_file.toPath());
         header = new CartridgeHeader(data);
     }
-    
-    public byte read(char address){
+
+    public byte read(char address) {
         return data[address];
     }
-    public void write(char address,byte value){
+
+    public void write(char address, byte value) {
         data[address] = value;
-    } 
+    }
 }

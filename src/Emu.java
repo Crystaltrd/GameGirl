@@ -2,6 +2,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HexFormat;
 
+// 0x0000 -> 0x3FFF: ROM Bank 0
+// 0x4000 -> 0x7FFF: ROM Bank 1-NN, switchable
+// 0x8000 -> 0x9FFF: VRAM
+// 0xA000 -> 0xBFFF: External RAM, switchable
+// 0xC000 -> 0xCFFF: WRAM
+// 0xD000 -> 0xDFFF: WRAM switchable
+// 0xE000 -> 0xFDFF: Echo RAM
+// 0xFE00 -> 0xFE9F: OAM
+// 0xFEA0 -> 0xFEFF: UNUSABLE
+// 0xFF00 -> 0xFF7F: IO Registers
+// 0xFF80 -> 0xFFFE: HRAM
+// 0xFFFF  Interrupt Enable Register
 public class Emu {
     public CPU cpu;
     public InstructionSet instructionSet;
@@ -17,6 +29,8 @@ public class Emu {
         if (addr < 0x8000)
             cartridge.write(addr,val);
     }
+    
+    
     public byte[] fetchParams(Instruction instruction) {
         byte[] params = new byte[instruction.getBytes() - 1];
         for (char i = 0; i < params.length; i++) {

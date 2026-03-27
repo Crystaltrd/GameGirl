@@ -92,43 +92,59 @@ public enum Opcodes {
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
                 switch (operands.length) {
-                    case 0:
-                        IO.println("TODO 0");
-                        return false;
-                    case 1:
-                        IO.println("TODO 1");
-                        return false;
                     case 2:
-                        if (operands[0].getName().isReg16() && operands[1].getName() == OperandType.IMMEDIATE_DOUBLEWORD) {
-                            switch (operands[0].getName()) {
-                                case DOUBLE_REGISTER_AF -> {
-                                    ctx.cpu.setFlagReg(params[0]);
-                                    ctx.cpu.setRegA(params[1]);
-                                }
-                                case DOUBLE_REGISTER_BC -> {
-                                    ctx.cpu.setRegC(params[0]);
-                                    ctx.cpu.setRegB(params[1]);
-                                }
-                                case DOUBLE_REGISTER_DE -> {
-                                    ctx.cpu.setRegE(params[0]);
-                                    ctx.cpu.setRegD(params[1]);
-                                }
-                                case DOUBLE_REGISTER_HL -> {
-                                    ctx.cpu.setRegL(params[0]);
-                                    ctx.cpu.setRegH(params[1]);
-
-                                }
-                                case DOUBLE_REGISTER_SP -> {
-                                    ctx.cpu.setRegSP(CPU.get18bit(params));
+                        if (OperandType.isr8(operands[0])) {
+                            if (OperandType.isr8(operands[1])) {
+                                byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                                ctx.cpu.setRegFromOperandTypr(operands[0].getName(), load);
+                            } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                                ctx.cpu.setRegFromOperandTypr(operands[0].getName(), params[0]);
+                            } else if (OperandType.isr16(operands[1]) && !operands[1].isImmediate()) {
+                                char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                                byte load = ctx.bus_read(addr);
+                                ctx.cpu.setRegFromOperandTypr(operands[0].getName(), load);
+                                if (operands[1].isDecrement())
+                                    ctx.cpu.setRegFromOperandTypr(operands[1].getName(), (char) (addr - 1));
+                                else if (operands[1].isIncrement())
+                                    ctx.cpu.setRegFromOperandTypr(operands[1].getName(), (char) (addr + 1));
+                            } else {
+                                IO.println("UNSUPPORTED");
+                                return false;
+                            }
+                        } else if (OperandType.isr16(operands[0])) {
+                            if (operands[0].isImmediate()) {
+                                if (OperandType.isr16(operands[1])) {
+                                    char load = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), load);
+                                } else
+                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), CPU.get18bit(params));
+                            } else {
+                                char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[0].getName());
+                                if (OperandType.isr8(operands[1])) {
+                                    ctx.bus_write(addr, (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName()));
+                                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                                    ctx.bus_write(addr, params[0]);
+                                } else {
+                                    IO.println("UNSUPPORTED");
+                                    return false;
                                 }
                             }
+                        } else if (operands[0].getName() == OperandType.IMMEDIATE_DOUBLEWORD && operands[0].isImmediate()) {
+                            if (OperandType.isr8(operands[1])) {
+                                byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                                ctx.bus_write(CPU.get18bit(params), load);
+                            } else {
+                                IO.println("UNSUPPORTED");
+                                return false;
+                            }
                         } else {
-                            IO.println("TODO");
+                            IO.println("UNSUPPORTED");
                             return false;
                         }
                         break;
+                    case 3:
                     default:
-                        IO.println("TODO DEF");
+                        IO.println("UNSUPPORTED");
                         return false;
                 }
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
@@ -152,7 +168,6 @@ public enum Opcodes {
                             ctx.cpu.setRegPC(newPC);
                             return true;
                         }
-
                         return false;
                     case 2:
                         IO.println("TODO 2");
@@ -180,6 +195,28 @@ public enum Opcodes {
                 return true;
             }
     );
+    static final Function<Emu, Boolean> XOR_CB = (
+            ctx -> {
+                IO.println("EXECUTING XOR");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                if (OperandType.isr8(operands[1])) {
+                    switch (operands[1].getName()) {
+                        case REGISTER_A -> ctx.cpu.setRegA((byte) 0);
+                        case REGISTER_B -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegB()));
+                        case REGISTER_C -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegC()));
+                        case REGISTER_D -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegD()));
+                        case REGISTER_E -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegE()));
+                        case REGISTER_H -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegH()));
+                        case REGISTER_L -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegL()));
+                    }
+                }
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
+
     static {
         for (final Opcodes val : EnumSet.allOf(Opcodes.class)) {
             val.callBack = NONE_CB;
@@ -189,6 +226,7 @@ public enum Opcodes {
         DI.callBack = DI_CB;
         LD.callBack = LD_CB;
         CALL.callBack = CALL_CB;
+        XOR.callBack = XOR_CB;
     }
 
     public Function<Emu, Boolean> callBack;

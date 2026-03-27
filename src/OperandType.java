@@ -19,38 +19,54 @@ public enum OperandType {
     BIT_5("5"),
     BIT_6("6"),
     BIT_7("7"),
-    DOUBLE_REGISTER_AF("AF",false,true),
-    DOUBLE_REGISTER_BC("BC",false,true),
-    DOUBLE_REGISTER_DE("DE",false,true),
-    DOUBLE_REGISTER_HL("HL",false,true),
-    DOUBLE_REGISTER_SP("SP",false,true),
-    REGISTER_A("A",true,false),
-    REGISTER_B("B",true,false),
-    REGISTER_C("C",true,false),
-    REGISTER_D("D",true,false),
-    REGISTER_E("E",true,false),
-    REGISTER_H("H",true,false),
-    REGISTER_L("L",true,false),
+    DOUBLE_REGISTER_AF("AF"),
+    DOUBLE_REGISTER_BC("BC"),
+    DOUBLE_REGISTER_DE("DE"),
+    DOUBLE_REGISTER_HL("HL"),
+    DOUBLE_REGISTER_SP("SP"),
+    REGISTER_A("A"),
+    REGISTER_B("B"),
+    REGISTER_C("C"),
+    REGISTER_D("D"),
+    REGISTER_E("E"),
+    REGISTER_H("H"),
+    REGISTER_L("L"),
     SIGNED_IMMEDIATE("e8"),
     ADDRESS_DOUBLEWORD("a16"),
     ADDRESS_BYTE("a8"),
     IMMEDIATE_DOUBLEWORD("n16"),
     IMMEDIATE_WORD("n8"),
-    AMBIGUOUS_CARRYFLAG_OR_REGISTERC("C"),
     FLAG_NOTCARRY("NC"),
     FLAG_NOTZERO("NZ"),
+    FLAG_CARRY("CC"),
     FLAG_ZERO("Z");
     private final String label;
-    private boolean reg8 = false;
-    private boolean reg16 = false;
+
     OperandType(String label) {
         this.label = label;
     }
-    OperandType(String label, boolean reg8, boolean reg16) {
-        this.label = label;
-        this.reg8 = reg8;
-        this.reg16 = reg16;
-    }    @JsonValue
+
+    public static boolean isr8(InstructionOperands operand) {
+        OperandType op = operand.getName();
+        return op == OperandType.REGISTER_A ||
+                op == OperandType.REGISTER_B ||
+                op == OperandType.REGISTER_C ||
+                op == OperandType.REGISTER_D ||
+                op == OperandType.REGISTER_E ||
+                op == OperandType.REGISTER_H ||
+                op == OperandType.REGISTER_L;
+    }
+
+    public static boolean isr16(InstructionOperands operand) {
+        OperandType op = operand.getName();
+        return op == OperandType.DOUBLE_REGISTER_AF ||
+                op == OperandType.DOUBLE_REGISTER_BC ||
+                op == OperandType.DOUBLE_REGISTER_DE ||
+                op == OperandType.DOUBLE_REGISTER_HL ||
+                op == OperandType.DOUBLE_REGISTER_SP;
+    }
+
+    @JsonValue
     public String getLabel() {
         return label;
     }

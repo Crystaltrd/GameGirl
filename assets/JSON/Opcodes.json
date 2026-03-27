@@ -1212,7 +1212,7 @@
 			],
 			"operands": [
 				{
-					"name": "C",
+					"name": "CC",
 					"immediate": true
 				},
 				{
@@ -5005,7 +5005,7 @@
 			],
 			"operands": [
 				{
-					"name": "C",
+					"name": "CC",
 					"immediate": true
 				},
 				{
@@ -5044,7 +5044,7 @@
 			],
 			"operands": [
 				{
-					"name": "C",
+					"name": "CC",
 					"immediate": true
 				},
 				{
