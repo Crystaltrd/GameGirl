@@ -27,7 +27,26 @@ public class CPU {
     public void setFlagReg(byte data) {
         FlagReg.setByte(data);
     }
+    public void setFlagReg(ALUResult result){
+        if (result.Carry == FlagOperation.SET)
+            FlagReg.setCarryFlag(true);
+        if (result.HalfCarry == FlagOperation.SET)
+            FlagReg.setHalfCarryFlag(true);
+        if (result.Zero == FlagOperation.SET)
+            FlagReg.setZeroFlag(true);        
+        if (result.Dec == FlagOperation.SET)
+            FlagReg.setSubstractFlag(true);
+        
+        if (result.Carry == FlagOperation.RESET)
+            FlagReg.setCarryFlag(false);
+        if (result.HalfCarry == FlagOperation.RESET)
+            FlagReg.setHalfCarryFlag(false);
+        if (result.Zero == FlagOperation.RESET)
+            FlagReg.setZeroFlag(false);
+        if (result.Dec == FlagOperation.RESET)
+            FlagReg.setSubstractFlag(false);
 
+    }
     public static char get18bit(byte[] data) {
         char ch = (char) ((data[1] << 8));
         ch |= (char) ((char) data[0] & 0x00FF);
@@ -72,6 +91,18 @@ public class CPU {
             case REGISTER_L -> {
                 return RegL;
             }
+            case FLAG_CARRY -> {
+                return FlagReg.isCarryFlag();
+            }
+            case FLAG_NOTCARRY -> {
+                return !FlagReg.isCarryFlag();
+            }
+            case FLAG_ZERO -> {
+              return FlagReg.isZeroFlag();  
+            }
+            case FLAG_NOTZERO -> {
+                return !FlagReg.isZeroFlag();
+            }
         }
         return 0;
     }
@@ -96,30 +127,14 @@ public class CPU {
                 RegL = getLow((char) val);
 
             }
-            case DOUBLE_REGISTER_SP -> {
-                RegSP = (char) val;
-            }
-            case REGISTER_A -> {
-                RegA = (byte) val;
-            }
-            case REGISTER_B -> {
-                RegB = (byte) val;
-            }
-            case REGISTER_C -> {
-                RegC = (byte) val;
-            }
-            case REGISTER_D -> {
-                RegD = (byte) val;
-            }
-            case REGISTER_E -> {
-                RegE = (byte) val;
-            }
-            case REGISTER_H -> {
-                RegH = (byte) val;
-            }
-            case REGISTER_L -> {
-                RegL = (byte) val;
-            }
+            case DOUBLE_REGISTER_SP -> RegSP = (char) val;
+            case REGISTER_A -> RegA = (byte) val;
+            case REGISTER_B -> RegB = (byte) val;
+            case REGISTER_C -> RegC = (byte) val;
+            case REGISTER_D -> RegD = (byte) val;
+            case REGISTER_E -> RegE = (byte) val;
+            case REGISTER_H -> RegH = (byte) val;
+            case REGISTER_L -> RegL = (byte) val;
         }
     }
 

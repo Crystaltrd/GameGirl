@@ -66,7 +66,6 @@ public enum Opcodes {
     static final Function<Emu, Boolean> NONE_CB = (
             ctx -> {
                 IO.println("NOT IMPLEMENTED YET");
-                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return false;
             }
     );
@@ -82,6 +81,24 @@ public enum Opcodes {
                 IO.println("EXECUTING DI");
                 ctx.cpu.setIME(false);
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
+    static final Function<Emu, Boolean> JP_CB = (
+            ctx -> {
+                IO.println("EXECUTING JP");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                switch (operands[0].getName()) {
+                    case DOUBLE_REGISTER_HL ->
+                            ctx.cpu.setRegPC((char) ctx.cpu.getRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL));
+                    case ADDRESS_DOUBLEWORD -> ctx.cpu.setRegPC(CPU.get18bit(params));
+                    default -> {
+                        if ((boolean) ctx.cpu.getRegFromOperandTypr(operands[0].getName()))
+                            ctx.cpu.setRegPC(CPU.get18bit(params));
+                    }
+                }
                 return true;
             }
     );
@@ -128,7 +145,13 @@ public enum Opcodes {
                                     IO.println("UNSUPPORTED");
                                     return false;
                                 }
+                                if (operands[0].isDecrement())
+                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), (char) (addr - 1));
+                                else if (operands[0].isIncrement())
+                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), (char) (addr + 1));
                             }
+
+
                         } else if (operands[0].getName() == OperandType.IMMEDIATE_DOUBLEWORD && operands[0].isImmediate()) {
                             if (OperandType.isr8(operands[1])) {
                                 byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
@@ -143,11 +166,9 @@ public enum Opcodes {
                         }
                         break;
                     case 3:
-                       int newsp = ctx.cpu.getRegSP() + (short) params[0];
-                       if(newsp < 0)
-                           ctx.cpu.setCFlag(true);
-                       char hl = (char)(newsp & 0x0000FFFF);
-                        ctx.cpu.setRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL,hl);
+                        ALUResult result = ALU.addByteToReg(ctx.cpu.getRegSP(), params[0], true);
+                        ctx.cpu.setFlagReg(result);
+                        ctx.cpu.setRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL, result.result);
                         break;
                     default:
                         IO.println("UNSUPPORTED");
@@ -158,81 +179,86 @@ public enum Opcodes {
             }
     );
 
-    static final Function<Emu, Boolean> JP_CB = (
-            ctx -> {
-                IO.println("EXECUTING JP");
-                Instruction instruction = ctx.cpu.getCurrInstruction();
-                InstructionOperands[] operands = instruction.getOperands();
-                byte[] params = ctx.cpu.getCurrParams();
-                switch (operands.length) {
-                    case 0:
-                        IO.println("TODO 0");
-                        return false;
-                    case 1:
-                        if (operands[0].getName() == OperandType.ADDRESS_DOUBLEWORD) {
-                            char newPC = (char) (params[1] << 8 | params[0]);
-                            ctx.cpu.setRegPC(newPC);
-                            return true;
-                        }
-                        return false;
-                    case 2:
-                        IO.println("TODO 2");
-                        return false;
-                    default:
-                        IO.println("TODO DEF");
-                        return false;
-                }
-                //ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
-                //return true;
-            }
-    );
-
-    static final Function<Emu, Boolean> CALL_CB = (
-            ctx -> {
-                IO.println("EXECUTING CALL");
-                Instruction instruction = ctx.cpu.getCurrInstruction();
-                InstructionOperands[] operands = instruction.getOperands();
-                byte[] params = ctx.cpu.getCurrParams();
-                ctx.cpu.setRegSP((char) (ctx.cpu.getRegSP() - 1));
-                ctx.bus_write(ctx.cpu.getRegSP(), CPU.getHigh((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes())));
-                ctx.cpu.setRegSP((char) (ctx.cpu.getRegSP() - 1));
-                ctx.bus_write(ctx.cpu.getRegSP(), CPU.getLow((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes())));
-                ctx.cpu.setRegPC(CPU.get18bit(params));
-                return true;
-            }
-    );
     static final Function<Emu, Boolean> XOR_CB = (
             ctx -> {
                 IO.println("EXECUTING XOR");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
+                byte load;
                 if (OperandType.isr8(operands[1])) {
-                    switch (operands[1].getName()) {
-                        case REGISTER_A -> ctx.cpu.setRegA((byte) 0);
-                        case REGISTER_B -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegB()));
-                        case REGISTER_C -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegC()));
-                        case REGISTER_D -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegD()));
-                        case REGISTER_E -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegE()));
-                        case REGISTER_H -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegH()));
-                        case REGISTER_L -> ctx.cpu.setRegA((byte) (ctx.cpu.getRegA() ^ ctx.cpu.getRegL()));
-                    }
+                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                    load = params[0];
+                } else {
+                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = ctx.bus_read(addr);
                 }
+                ALUResult result = ALU.XOR(ctx.cpu.getRegA(),load);
+                ctx.cpu.setRegA((byte) result.result);
+                ctx.cpu.setFlagReg(result);
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
             }
     );
 
+
+    static final Function<Emu, Boolean> OR_CB = (
+            ctx -> {
+                IO.println("EXECUTING OR");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                byte load;
+                if (OperandType.isr8(operands[1])) {
+                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                    load = params[0];
+                } else {
+                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = ctx.bus_read(addr);
+                }
+                ALUResult result = ALU.OR(ctx.cpu.getRegA(),load);
+                ctx.cpu.setRegA((byte) result.result);
+                ctx.cpu.setFlagReg(result);
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
+
+    static final Function<Emu, Boolean> AND_CB = (
+            ctx -> {
+                IO.println("EXECUTING AND");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                byte load;
+                if (OperandType.isr8(operands[1])) {
+                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                    load = params[0];
+                } else {
+                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = ctx.bus_read(addr);
+                }
+                ALUResult result = ALU.AND(ctx.cpu.getRegA(),load);
+                ctx.cpu.setRegA((byte) result.result);
+                ctx.cpu.setFlagReg(result);
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
     static {
         for (final Opcodes val : EnumSet.allOf(Opcodes.class)) {
             val.callBack = NONE_CB;
         }
         NOP.callBack = NOP_CB;
-        JP.callBack = JP_CB;
         DI.callBack = DI_CB;
         LD.callBack = LD_CB;
-        CALL.callBack = CALL_CB;
+        JP.callBack = JP_CB;
         XOR.callBack = XOR_CB;
+        AND.callBack = AND_CB;
+        OR.callBack = OR_CB;
     }
 
     public Function<Emu, Boolean> callBack;
