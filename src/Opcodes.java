@@ -143,6 +143,12 @@ public enum Opcodes {
                         }
                         break;
                     case 3:
+                       int newsp = ctx.cpu.getRegSP() + (short) params[0];
+                       if(newsp < 0)
+                           ctx.cpu.setCFlag(true);
+                       char hl = (char)(newsp & 0x0000FFFF);
+                        ctx.cpu.setRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL,hl);
+                        break;
                     default:
                         IO.println("UNSUPPORTED");
                         return false;

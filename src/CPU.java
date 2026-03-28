@@ -1,5 +1,6 @@
 import lombok.Getter;
 import lombok.Setter;
+
 import java.util.HexFormat;
 
 @Setter
@@ -32,19 +33,20 @@ public class CPU {
         ch |= (char) ((char) data[0] & 0x00FF);
         return ch;
     }
-    public Object getRegFromOperandTypr(OperandType op){
+
+    public Object getRegFromOperandTypr(OperandType op) {
         switch (op) {
             case DOUBLE_REGISTER_AF -> {
-                return get18bit(new byte[]{FlagReg.getByte(),RegA});
+                return get18bit(new byte[]{FlagReg.getByte(), RegA});
             }
             case DOUBLE_REGISTER_BC -> {
-                return get18bit(new byte[]{RegC,RegB});
+                return get18bit(new byte[]{RegC, RegB});
             }
             case DOUBLE_REGISTER_DE -> {
-                return get18bit(new byte[]{RegE,RegD});
+                return get18bit(new byte[]{RegE, RegD});
             }
             case DOUBLE_REGISTER_HL -> {
-                return get18bit(new byte[]{RegL,RegH});
+                return get18bit(new byte[]{RegL, RegH});
             }
             case DOUBLE_REGISTER_SP -> {
                 return RegSP;
@@ -73,7 +75,8 @@ public class CPU {
         }
         return 0;
     }
-    public void setRegFromOperandTypr(OperandType op, Object val){
+
+    public void setRegFromOperandTypr(OperandType op, Object val) {
         switch (op) {
             case DOUBLE_REGISTER_AF -> {
                 RegA = getHigh((char) val);
@@ -81,45 +84,58 @@ public class CPU {
             }
             case DOUBLE_REGISTER_BC -> {
                 RegB = getHigh((char) val);
-                RegC =getLow((char) val);
+                RegC = getLow((char) val);
             }
             case DOUBLE_REGISTER_DE -> {
                 RegD = getHigh((char) val);
-                RegE =getLow((char) val);
+                RegE = getLow((char) val);
 
             }
             case DOUBLE_REGISTER_HL -> {
                 RegH = getHigh((char) val);
-                RegL =getLow((char) val);
+                RegL = getLow((char) val);
 
             }
             case DOUBLE_REGISTER_SP -> {
                 RegSP = (char) val;
             }
             case REGISTER_A -> {
-                 RegA = (byte) val;
+                RegA = (byte) val;
             }
             case REGISTER_B -> {
-                 RegB = (byte) val;
+                RegB = (byte) val;
             }
             case REGISTER_C -> {
-                 RegC = (byte) val;
+                RegC = (byte) val;
             }
             case REGISTER_D -> {
-                 RegD = (byte) val;
+                RegD = (byte) val;
             }
             case REGISTER_E -> {
-                 RegE = (byte) val;
+                RegE = (byte) val;
             }
             case REGISTER_H -> {
-                 RegH = (byte) val;
+                RegH = (byte) val;
             }
             case REGISTER_L -> {
-                 RegL = (byte) val;
+                RegL = (byte) val;
             }
         }
     }
 
+    public void setHFlag(boolean flag) {
+        FlagReg.setHalfCarryFlag(flag);
+    }
+
+    public void setCFlag(boolean flag) {
+        FlagReg.setCarryFlag(flag);
+    }
+    public void setZFlag(boolean flag) {
+        FlagReg.setZeroFlag(flag);
+    }
+    public void setSFlag(boolean flag) {
+        FlagReg.setSubstractFlag(flag);
+    }
     public static byte getLow(char word) {
         return (byte) (word & 0x00FF);
     }
