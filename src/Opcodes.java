@@ -152,7 +152,7 @@ public enum Opcodes {
                             }
 
 
-                        } else if (operands[0].getName() == OperandType.IMMEDIATE_DOUBLEWORD && operands[0].isImmediate()) {
+                        } else if (operands[0].getName() == OperandType.ADDRESS_DOUBLEWORD && !operands[0].isImmediate()) {
                             if (OperandType.isr8(operands[1])) {
                                 byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
                                 ctx.bus_write(CPU.get18bit(params), load);
@@ -203,6 +203,31 @@ public enum Opcodes {
     );
 
 
+    static final Function<Emu, Boolean> DEC_CB = (
+            ctx -> {
+                IO.println("EXECUTING DEC");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                if (OperandType.isr8(operands[0])) {
+                    ALUResult result = ALU.DEC((byte)ctx.cpu.getRegFromOperandTypr(operands[0].getName()));
+                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), result.result);
+                    ctx.cpu.setFlagReg(result);
+                } else if (OperandType.isr16(operands[0])) {
+                    if(operands[0].isImmediate()){
+                        ctx.cpu.setRegFromOperandTypr(operands[0].getName(), ctx.cpu.getRegFromOperandTypr(operands[0].getName()));
+                    } else{
+                        char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[0].getName());
+                        byte load = ctx.bus_read(addr);
+                        ALUResult result = ALU.DEC(load);
+                        ctx.bus_write(addr, (byte) result.result);
+                        ctx.cpu.setFlagReg(result);
+                    }
+                } 
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
     static final Function<Emu, Boolean> OR_CB = (
             ctx -> {
                 IO.println("EXECUTING OR");
@@ -259,6 +284,7 @@ public enum Opcodes {
         XOR.callBack = XOR_CB;
         AND.callBack = AND_CB;
         OR.callBack = OR_CB;
+        DEC.callBack = DEC_CB;
     }
 
     public Function<Emu, Boolean> callBack;
