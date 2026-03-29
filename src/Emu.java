@@ -35,11 +35,11 @@ public class Emu {
         else if (addr < 0xFF00)
             return 0;
         else if (addr < 0xFF80)
-            IO.println("TODO: IO REGISTERS");
+            System.out.println("TODO: IO REGISTERS");
         else if(addr < 0xFFFF)
-            IO.println("TODO: HRAM");
+            System.out.println("TODO: HRAM");
         else{
-            IO.println("TODO: IE REGISTER");
+            System.out.println("TODO: IE REGISTER");
         }
         return 0;
     }
@@ -56,13 +56,13 @@ public class Emu {
         else if (addr < 0xFEA0)
              ppu.write(addr,val);
         else if (addr < 0xFF00)
-            IO.println("NUH UH");
+            System.out.println("NUH UH");
         else if (addr < 0xFF80)
-            IO.println("TODO: IO REGISTERS");
+            System.out.println("TODO: IO REGISTERS");
         else if(addr < 0xFFFF)
-            IO.println("TODO: HRAM");
+            System.out.println("TODO: HRAM");
         else{
-            IO.println("TODO: IE REGISTER");
+            System.out.println("TODO: IE REGISTER");
         }
     }
 
@@ -86,14 +86,14 @@ public class Emu {
         Instruction instruction = cpu.getCurrInstruction();
         byte[] params = cpu.getCurrParams();
         HexFormat commaFormat = HexFormat.ofDelimiter(" ").withPrefix("");
-        IO.println(cpu);
+        System.out.println(cpu);
         if (instruction.getMnemonic() == Opcodes.PREFIX) {
-            IO.print("PREFIXED: ");
+            System.out.print("PREFIXED: ");
             cpu.setRegPC((char) (cpu.getRegPC() + 1));
             instruction = fetchInstr(true);
             params = fetchParams(instruction);
         }
-        IO.println(String.format("%#04X: %-10s (0x%02X %s)",
+        System.out.println(String.format("%#04X: %-10s (0x%02X %s)",
                 (short) cpu.getRegPC(),
                 instruction.getMnemonic(),
                 bus_read(cpu.getRegPC()),
@@ -115,7 +115,7 @@ public class Emu {
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
         cpu = new CPU();
-        IO.println(cartridge.header.humanReadable());
+        System.out.println(cartridge.header.humanReadable());
         cpu.setRegPC((char) 0x0100);
         while (step()) {
         }

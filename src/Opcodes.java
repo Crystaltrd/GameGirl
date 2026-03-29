@@ -65,20 +65,20 @@ public enum Opcodes {
     public final String label;
     static final Function<Emu, Boolean> NONE_CB = (
             ctx -> {
-                IO.println("NOT IMPLEMENTED YET");
+                System.out.println("NOT IMPLEMENTED YET");
                 return false;
             }
     );
     static final Function<Emu, Boolean> NOP_CB = (
             ctx -> {
-                IO.println("EXECUTING NOP");
+                System.out.println("EXECUTING NOP");
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
             }
     );
     static final Function<Emu, Boolean> DI_CB = (
             ctx -> {
-                IO.println("EXECUTING DI");
+                System.out.println("EXECUTING DI");
                 ctx.cpu.setIME(false);
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
@@ -86,7 +86,7 @@ public enum Opcodes {
     );
     static final Function<Emu, Boolean> JP_CB = (
             ctx -> {
-                IO.println("EXECUTING JP");
+                System.out.println("EXECUTING JP");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -104,7 +104,7 @@ public enum Opcodes {
     );
     static final Function<Emu, Boolean> LD_CB = (
             ctx -> {
-                IO.println("EXECUTING LD");
+                System.out.println("EXECUTING LD");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -125,7 +125,7 @@ public enum Opcodes {
                                 else if (operands[1].isIncrement())
                                     ctx.cpu.setRegFromOperandTypr(operands[1].getName(), (char) (addr + 1));
                             } else {
-                                IO.println("UNSUPPORTED");
+                                System.out.println("UNSUPPORTED");
                                 return false;
                             }
                         } else if (OperandType.isr16(operands[0])) {
@@ -142,7 +142,7 @@ public enum Opcodes {
                                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
                                     ctx.bus_write(addr, params[0]);
                                 } else {
-                                    IO.println("UNSUPPORTED");
+                                    System.out.println("UNSUPPORTED");
                                     return false;
                                 }
                                 if (operands[0].isDecrement())
@@ -157,11 +157,11 @@ public enum Opcodes {
                                 byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
                                 ctx.bus_write(CPU.get18bit(params), load);
                             } else {
-                                IO.println("UNSUPPORTED");
+                                System.out.println("UNSUPPORTED");
                                 return false;
                             }
                         } else {
-                            IO.println("UNSUPPORTED");
+                            System.out.println("UNSUPPORTED");
                             return false;
                         }
                         break;
@@ -171,7 +171,7 @@ public enum Opcodes {
                         ctx.cpu.setRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL, result.result);
                         break;
                     default:
-                        IO.println("UNSUPPORTED");
+                        System.out.println("UNSUPPORTED");
                         return false;
                 }
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
@@ -181,7 +181,7 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> XOR_CB = (
             ctx -> {
-                IO.println("EXECUTING XOR");
+                System.out.println("EXECUTING XOR");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -205,7 +205,7 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> DEC_CB = (
             ctx -> {
-                IO.println("EXECUTING DEC");
+                System.out.println("EXECUTING DEC");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -230,7 +230,7 @@ public enum Opcodes {
     );
     static final Function<Emu, Boolean> OR_CB = (
             ctx -> {
-                IO.println("EXECUTING OR");
+                System.out.println("EXECUTING OR");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -253,7 +253,7 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> AND_CB = (
             ctx -> {
-                IO.println("EXECUTING AND");
+                System.out.println("EXECUTING AND");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
