@@ -5,9 +5,9 @@ public class PPU {
 
     public byte read(char address) {
         if (address >= 0x8000 && address <= 0x97FF)
-            return TileRAM[0x8000 - address];
+            return TileRAM[0x97FF - address];
         else if (address >= 0x9800 && address <= 0x9FFF)
-            return BackgroundMap[0x9800 - address];
+            return BackgroundMap[0x9FFF - address];
         else if (address >= 0xFE00 && address <= 0xFE9F)
             return ObjectAttributeMemory[0xFE9F - address];
         else

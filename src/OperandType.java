@@ -66,6 +66,11 @@ public enum OperandType {
                 op == OperandType.DOUBLE_REGISTER_SP;
     }
 
+    public static boolean isCC(InstructionOperands operand) {
+        OperandType op = operand.getName();
+        return op == FLAG_CARRY || op == FLAG_NOTCARRY || op == FLAG_ZERO || op == FLAG_NOTZERO;
+    }
+
     @JsonValue
     public String getLabel() {
         return label;

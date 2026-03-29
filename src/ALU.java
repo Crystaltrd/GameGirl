@@ -5,10 +5,16 @@ public class ALU {
         boolean carry = result >> 16 != 0;
         ALUResult operationResult = new ALUResult();
         operationResult.Carry = carry ? FlagOperation.SET : FlagOperation.RESET;
-        operationResult.result = result & 0xFFFF;
+        operationResult.result = (char) (result & 0xFFFF);
         return operationResult;
     }
 
+    public static ALUResult addByteToByte(byte op1, byte op2, boolean signed) {
+        int result = (op1 & 0xFF) + (signed ? op2 : op2 & 0xFF);
+        ALUResult operationResult = new ALUResult();
+        operationResult.result = result;
+        return operationResult;
+    }
     public static ALUResult XOR(byte b1, byte b2) {
 
         ALUResult operationResult = new ALUResult();

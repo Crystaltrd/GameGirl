@@ -1,12 +1,12 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.HexFormat;
+import java.util.Scanner;
 
 // 0x0000 -> 0x3FFF: ROM Bank 0
 // 0x4000 -> 0x7FFF: ROM Bank 1-NN, switchable
 // 0x8000 -> 0x9FFF: VRAM
 // 0xA000 -> 0xBFFF: External RAM, switchable
-
 // 0xC000 -> 0xDFFF: WRAM
 // 0xE000 -> 0xFDFF: Echo RAM
 // 0xFE00 -> 0xFE9F: OAM
@@ -27,18 +27,20 @@ public class Emu {
         else if (addr < 0xA000)
             return ppu.read(addr);
         else if (addr < 0xC000)
-            return WorkRAM[0xC000 - addr];
+            System.out.println("TODO: EXTERNAL RAM");
+        else if (addr < 0xE000)
+            return WorkRAM[0xDFFF - addr];
         else if (addr < 0xFE00)
-            return WorkRAM[0xFE00 - addr];
+            return WorkRAM[0xFE9F - addr];
         else if (addr < 0xFEA0)
             return ppu.read(addr);
         else if (addr < 0xFF00)
             return 0;
         else if (addr < 0xFF80)
             System.out.println("TODO: IO REGISTERS");
-        else if(addr < 0xFFFF)
+        else if (addr < 0xFFFF)
             System.out.println("TODO: HRAM");
-        else{
+        else {
             System.out.println("TODO: IE REGISTER");
         }
         return 0;
@@ -46,22 +48,24 @@ public class Emu {
 
     public void bus_write(char addr, byte val) {
         if (addr < 0x8000)
-             cartridge.write(addr,val);
+            cartridge.write(addr, val);
         else if (addr < 0xA000)
-             ppu.write(addr,val);
+            ppu.write(addr, val);
         else if (addr < 0xC000)
-             WorkRAM[0xC000 - addr] = val;
+            System.out.println("EXTERNAL RAM: TODO");//TODO
+        else if (addr < 0xE000)
+            WorkRAM[0xDFFF - addr] = val;
         else if (addr < 0xFE00)
-             WorkRAM[0xFE00 - addr] = val;
+            WorkRAM[0xFE9F - addr] = val;
         else if (addr < 0xFEA0)
-             ppu.write(addr,val);
+            ppu.write(addr, val);
         else if (addr < 0xFF00)
             System.out.println("NUH UH");
         else if (addr < 0xFF80)
             System.out.println("TODO: IO REGISTERS");
-        else if(addr < 0xFFFF)
+        else if (addr < 0xFFFF)
             System.out.println("TODO: HRAM");
-        else{
+        else {
             System.out.println("TODO: IE REGISTER");
         }
     }
@@ -93,12 +97,11 @@ public class Emu {
             instruction = fetchInstr(true);
             params = fetchParams(instruction);
         }
-        System.out.println(String.format("%#04X: %-10s (0x%02X %s)",
+        System.out.printf("%#04X: %-10s (0x%02X %s)%n",
                 (short) cpu.getRegPC(),
                 instruction.getMnemonic(),
                 bus_read(cpu.getRegPC()),
-                commaFormat.formatHex(params))
-        );
+                commaFormat.formatHex(params));
         return instruction.getMnemonic().callBack.apply(this);
     }
 
@@ -117,7 +120,9 @@ public class Emu {
         cpu = new CPU();
         System.out.println(cartridge.header.humanReadable());
         cpu.setRegPC((char) 0x0100);
+        Scanner scanner = new Scanner(System.in);
         while (step()) {
+            // scanner.nextLine();
         }
 
     }
