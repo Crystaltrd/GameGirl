@@ -6,8 +6,8 @@ import java.util.HexFormat;
 // 0x4000 -> 0x7FFF: ROM Bank 1-NN, switchable
 // 0x8000 -> 0x9FFF: VRAM
 // 0xA000 -> 0xBFFF: External RAM, switchable
-// 0xC000 -> 0xCFFF: WRAM
-// 0xD000 -> 0xDFFF: WRAM switchable
+
+// 0xC000 -> 0xDFFF: WRAM
 // 0xE000 -> 0xFDFF: Echo RAM
 // 0xFE00 -> 0xFE9F: OAM
 // 0xFEA0 -> 0xFEFF: UNUSABLE
@@ -18,19 +18,55 @@ public class Emu {
     public CPU cpu;
     public InstructionSet instructionSet;
     public Cartridge cartridge;
+    public PPU ppu = new PPU();
+    public byte[] WorkRAM = new byte[0xDFFF - 0xC000 + 1];
 
     public byte bus_read(char addr) {
         if (addr < 0x8000)
             return cartridge.read(addr);
+        else if (addr < 0xA000)
+            return ppu.read(addr);
+        else if (addr < 0xC000)
+            return WorkRAM[0xC000 - addr];
+        else if (addr < 0xFE00)
+            return WorkRAM[0xFE00 - addr];
+        else if (addr < 0xFEA0)
+            return ppu.read(addr);
+        else if (addr < 0xFF00)
+            return 0;
+        else if (addr < 0xFF80)
+            IO.println("TODO: IO REGISTERS");
+        else if(addr < 0xFFFF)
+            IO.println("TODO: HRAM");
+        else{
+            IO.println("TODO: IE REGISTER");
+        }
         return 0;
     }
 
     public void bus_write(char addr, byte val) {
         if (addr < 0x8000)
-            cartridge.write(addr,val);
+             cartridge.write(addr,val);
+        else if (addr < 0xA000)
+             ppu.write(addr,val);
+        else if (addr < 0xC000)
+             WorkRAM[0xC000 - addr] = val;
+        else if (addr < 0xFE00)
+             WorkRAM[0xFE00 - addr] = val;
+        else if (addr < 0xFEA0)
+             ppu.write(addr,val);
+        else if (addr < 0xFF00)
+            IO.println("NUH UH");
+        else if (addr < 0xFF80)
+            IO.println("TODO: IO REGISTERS");
+        else if(addr < 0xFFFF)
+            IO.println("TODO: HRAM");
+        else{
+            IO.println("TODO: IE REGISTER");
+        }
     }
-    
-    
+
+
     public byte[] fetchParams(Instruction instruction) {
         byte[] params = new byte[instruction.getBytes() - 1];
         for (char i = 0; i < params.length; i++) {
@@ -50,6 +86,7 @@ public class Emu {
         Instruction instruction = cpu.getCurrInstruction();
         byte[] params = cpu.getCurrParams();
         HexFormat commaFormat = HexFormat.ofDelimiter(" ").withPrefix("");
+        IO.println(cpu);
         if (instruction.getMnemonic() == Opcodes.PREFIX) {
             IO.print("PREFIXED: ");
             cpu.setRegPC((char) (cpu.getRegPC() + 1));
@@ -62,7 +99,6 @@ public class Emu {
                 bus_read(cpu.getRegPC()),
                 commaFormat.formatHex(params))
         );
-        IO.println(cpu);
         return instruction.getMnemonic().callBack.apply(this);
     }
 
@@ -76,14 +112,12 @@ public class Emu {
     }
 
     Emu(String ROMFile, String OpCodesFile) throws IOException {
-        bus_read((char) 0x9000);
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
         cpu = new CPU();
         IO.println(cartridge.header.humanReadable());
         cpu.setRegPC((char) 0x0100);
         while (step()) {
-
         }
 
     }

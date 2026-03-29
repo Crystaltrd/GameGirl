@@ -14,8 +14,8 @@ public class CPU {
     private byte RegE;
     private byte RegH;
     private byte RegL;
-    private char RegSP;
-    private char RegPC = 0x100;
+    private char RegSP = 0xFFFE;
+    private char RegPC = 0x0100;
 
     private boolean IME = false;
     private boolean halted = false;
@@ -163,7 +163,7 @@ public class CPU {
         HexFormat hex = HexFormat.of();
         return "CPU{" +
                 "A=" + hex.toHexDigits(RegA) +
-                ",F=" + hex.toHexDigits(FlagReg.getByte()) +
+                ",F=" + FlagReg.toString() + Integer.toBinaryString(FlagReg.getByte() & 0xFF) +
                 ",B=" + hex.toHexDigits(RegB) +
                 ", C=" + hex.toHexDigits(RegC) +
                 ", D=" + hex.toHexDigits(RegD) +

@@ -20,7 +20,7 @@ class CartridgeHeader {
     public byte header_checksum_raw;
     public boolean checksum_passed;
     public byte[] global_checksum_raw = new byte[0x014F - 0x014E + 1];
-    public byte[] external_rom;
+    public int external_ram_size = 0;
 
 
     CartridgeHeader(byte[] data) {
@@ -42,7 +42,7 @@ class CartridgeHeader {
             checksum = (byte) (checksum - data[address] - 1);
         }
         checksum_passed = checksum == header_checksum_raw;
-        external_rom = new byte[1024 * EmuLookupTables.RAM_sizes.getOrDefault((int) RAM_size_raw, 0)];
+        external_ram_size = 1024 * EmuLookupTables.RAM_sizes.getOrDefault((int) RAM_size_raw, 0);
     }
 
 
@@ -93,10 +93,12 @@ class CartridgeHeader {
 public class Cartridge {
     CartridgeHeader header;
     public byte[] data;
+    public byte[] external_wram;
 
     Cartridge(File rom_file) throws IOException {
         data = Files.readAllBytes(rom_file.toPath());
         header = new CartridgeHeader(data);
+        external_wram = new byte[header.external_ram_size];
     }
 
     public byte read(char address) {
