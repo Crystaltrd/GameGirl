@@ -20,6 +20,9 @@ public class Emu {
     public Cartridge cartridge;
     public PPU ppu = new PPU();
     public byte[] WorkRAM = new byte[0xDFFF - 0xC000 + 1];
+    public byte[] IORegisters = new byte[0xFF7F - 0xFF00 + 1]; //TODO: move to dedicated class later
+    public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
+    public byte IEReg = 0;
 
     public byte bus_read(char addr) {
         if (addr < 0x8000)
@@ -29,19 +32,19 @@ public class Emu {
         else if (addr < 0xC000)
             System.out.println("TODO: EXTERNAL RAM");
         else if (addr < 0xE000)
-            return WorkRAM[0xDFFF - addr];
+            return WorkRAM[addr - 0xC000];
         else if (addr < 0xFE00)
-            return WorkRAM[0xFE9F - addr];
+            return WorkRAM[addr - 0xE000];
         else if (addr < 0xFEA0)
             return ppu.read(addr);
         else if (addr < 0xFF00)
             return 0;
         else if (addr < 0xFF80)
-            System.out.println("TODO: IO REGISTERS");
+            return IORegisters[addr - 0xFF00];
         else if (addr < 0xFFFF)
-            System.out.println("TODO: HRAM");
+            return HRAM[addr & 0x00FF];
         else {
-            System.out.println("TODO: IE REGISTER");
+            return IEReg;
         }
         return 0;
     }
@@ -54,19 +57,19 @@ public class Emu {
         else if (addr < 0xC000)
             System.out.println("EXTERNAL RAM: TODO");//TODO
         else if (addr < 0xE000)
-            WorkRAM[0xDFFF - addr] = val;
+            WorkRAM[addr - 0xC000] = val;
         else if (addr < 0xFE00)
-            WorkRAM[0xFE9F - addr] = val;
+            WorkRAM[addr - 0xE000] = val;
         else if (addr < 0xFEA0)
             ppu.write(addr, val);
         else if (addr < 0xFF00)
-            System.out.println("NUH UH");
+            System.out.println("Unwritable Memory");
         else if (addr < 0xFF80)
-            System.out.println("TODO: IO REGISTERS");
+            IORegisters[addr - 0xFF00] = val;
         else if (addr < 0xFFFF)
-            System.out.println("TODO: HRAM");
+            HRAM[addr - 0xFF80] = val;
         else {
-            System.out.println("TODO: IE REGISTER");
+            IEReg = val;
         }
     }
 
@@ -121,8 +124,9 @@ public class Emu {
         System.out.println(cartridge.header.humanReadable());
         cpu.setRegPC((char) 0x0100);
         Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
         while (step()) {
-            // scanner.nextLine();
+            
         }
 
     }

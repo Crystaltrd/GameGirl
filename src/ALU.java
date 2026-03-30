@@ -51,7 +51,7 @@ public class ALU {
         byte result = (byte) (b1 - 1);
         return getAluResult(operationResult, 
                 result, result == 0 ? FlagOperation.SET : FlagOperation.RESET,
-                ((~b1 ^ result) & 0x10) == 0 ? FlagOperation.RESET :  FlagOperation.SET,
+                (b1 & 0xF) + (result & 0xF) > 0xF ? FlagOperation.SET :  FlagOperation.RESET,
                 FlagOperation.SET,
                 FlagOperation.UNCHANGED);
     }

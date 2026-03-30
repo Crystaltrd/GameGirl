@@ -5,22 +5,22 @@ public class PPU {
 
     public byte read(char address) {
         if (address >= 0x8000 && address <= 0x97FF)
-            return TileRAM[0x97FF - address];
+            return TileRAM[address - 0x8000];
         else if (address >= 0x9800 && address <= 0x9FFF)
-            return BackgroundMap[0x9FFF - address];
+            return BackgroundMap[address - 0x9800];
         else if (address >= 0xFE00 && address <= 0xFE9F)
-            return ObjectAttributeMemory[0xFE9F - address];
+            return ObjectAttributeMemory[address - 0xFE00];
         else
             return 0;
     }
 
     public void write(char address, byte value) {
         if (address >= 0x8000 && address <= 0x97FF)
-            TileRAM[0x8000 - address] = value;
+            TileRAM[address - 0x8000] = value;
         else if (address >= 0x9800 && address <= 0x9FFF)
-            BackgroundMap[0x9800 - address] = value;
+            BackgroundMap[ address - 0x9800] = value;
         else if (address >= 0xFE00 && address <= 0xFE9F)
-            ObjectAttributeMemory[0xFE9F - address] = value;
+            ObjectAttributeMemory[address - 0xFE00] = value;
     }
 
 }
