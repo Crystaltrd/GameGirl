@@ -92,10 +92,10 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 switch (operands[0].getName()) {
                     case DOUBLE_REGISTER_HL ->
-                            ctx.cpu.setRegPC((char) ctx.cpu.getRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL));
+                            ctx.cpu.setRegPC((char) ctx.cpu.getRegFromOperandType(OperandType.DOUBLE_REGISTER_HL));
                     case ADDRESS_DOUBLEWORD -> ctx.cpu.setRegPC(CPU.get18bit(params));
                     default -> {
-                        if ((boolean) ctx.cpu.getRegFromOperandTypr(operands[0].getName()))
+                        if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
                             ctx.cpu.setRegPC(CPU.get18bit(params));
                     }
                 }
@@ -119,7 +119,7 @@ public enum Opcodes {
                     case FLAG_NOTZERO:
                     case FLAG_CARRY:
                     case FLAG_ZERO:
-                        if ((boolean) ctx.cpu.getRegFromOperandTypr(operands[0].getName())) {
+                        if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
                             ALUResult result = ALU.addByteToReg(nextPC, params[0], true);
                             ctx.cpu.setRegPC((char) result.result);
                         } else {
@@ -143,18 +143,18 @@ public enum Opcodes {
                     case 2:
                         if (OperandType.isr8(operands[0])) {
                             if (OperandType.isr8(operands[1])) {
-                                byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
-                                ctx.cpu.setRegFromOperandTypr(operands[0].getName(), load);
+                                byte load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                                ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                             } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
-                                ctx.cpu.setRegFromOperandTypr(operands[0].getName(), params[0]);
+                                ctx.cpu.setRegFromOperandType(operands[0].getName(), params[0]);
                             } else if (OperandType.isr16(operands[1]) && !operands[1].isImmediate()) {
-                                char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                                char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
                                 byte load = ctx.bus_read(addr);
-                                ctx.cpu.setRegFromOperandTypr(operands[0].getName(), load);
+                                ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                                 if (operands[1].isDecrement())
-                                    ctx.cpu.setRegFromOperandTypr(operands[1].getName(), (char) (addr - 1));
+                                    ctx.cpu.setRegFromOperandType(operands[1].getName(), (char) (addr - 1));
                                 else if (operands[1].isIncrement())
-                                    ctx.cpu.setRegFromOperandTypr(operands[1].getName(), (char) (addr + 1));
+                                    ctx.cpu.setRegFromOperandType(operands[1].getName(), (char) (addr + 1));
                             } else {
                                 System.out.println("UNSUPPORTED");
                                 return false;
@@ -162,14 +162,14 @@ public enum Opcodes {
                         } else if (OperandType.isr16(operands[0])) {
                             if (operands[0].isImmediate()) {
                                 if (OperandType.isr16(operands[1])) {
-                                    char load = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
-                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), load);
+                                    char load = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                                    ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                                 } else
-                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), CPU.get18bit(params));
+                                    ctx.cpu.setRegFromOperandType(operands[0].getName(), CPU.get18bit(params));
                             } else {
-                                char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[0].getName());
+                                char addr = (char) ctx.cpu.getRegFromOperandType(operands[0].getName());
                                 if (OperandType.isr8(operands[1])) {
-                                    ctx.bus_write(addr, (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName()));
+                                    ctx.bus_write(addr, (byte) ctx.cpu.getRegFromOperandType(operands[1].getName()));
                                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
                                     ctx.bus_write(addr, params[0]);
                                 } else {
@@ -177,15 +177,15 @@ public enum Opcodes {
                                     return false;
                                 }
                                 if (operands[0].isDecrement())
-                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), (char) (addr - 1));
+                                    ctx.cpu.setRegFromOperandType(operands[0].getName(), (char) (addr - 1));
                                 else if (operands[0].isIncrement())
-                                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), (char) (addr + 1));
+                                    ctx.cpu.setRegFromOperandType(operands[0].getName(), (char) (addr + 1));
                             }
 
 
                         } else if (operands[0].getName() == OperandType.ADDRESS_DOUBLEWORD && !operands[0].isImmediate()) {
                             if (OperandType.isr8(operands[1])) {
-                                byte load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                                byte load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                                 ctx.bus_write(CPU.get18bit(params), load);
                             } else {
                                 System.out.println("UNSUPPORTED");
@@ -199,7 +199,7 @@ public enum Opcodes {
                     case 3:
                         ALUResult result = ALU.addByteToReg(ctx.cpu.getRegSP(), params[0], true);
                         ctx.cpu.setFlagReg(result);
-                        ctx.cpu.setRegFromOperandTypr(OperandType.DOUBLE_REGISTER_HL, result.result);
+                        ctx.cpu.setRegFromOperandType(OperandType.DOUBLE_REGISTER_HL, result.result);
                         break;
                     default:
                         System.out.println("UNSUPPORTED");
@@ -241,11 +241,11 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 byte load;
                 if (OperandType.isr8(operands[1])) {
-                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
                     load = params[0];
                 } else {
-                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
                     load = ctx.bus_read(addr);
                 }
                 ALUResult result = ALU.XOR(ctx.cpu.getRegA(), load);
@@ -264,11 +264,11 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 byte load;
                 if (OperandType.isr8(operands[1])) {
-                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
                     load = params[0];
                 } else {
-                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
                     load = ctx.bus_read(addr);
                 }
                 byte result = (byte) (ctx.cpu.getRegA() - load);
@@ -288,14 +288,14 @@ public enum Opcodes {
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
                 if (OperandType.isr8(operands[0])) {
-                    ALUResult result = ALU.DEC((byte) ctx.cpu.getRegFromOperandTypr(operands[0].getName()));
-                    ctx.cpu.setRegFromOperandTypr(operands[0].getName(), result.result);
+                    ALUResult result = ALU.DEC((byte) ctx.cpu.getRegFromOperandType(operands[0].getName()));
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(), result.result);
                     ctx.cpu.setFlagReg(result);
                 } else if (OperandType.isr16(operands[0])) {
                     if (operands[0].isImmediate()) {
-                        ctx.cpu.setRegFromOperandTypr(operands[0].getName(), ctx.cpu.getRegFromOperandTypr(operands[0].getName()));
+                        ctx.cpu.setRegFromOperandType(operands[0].getName(), ctx.cpu.getRegFromOperandType(operands[0].getName()));
                     } else {
-                        char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[0].getName());
+                        char addr = (char) ctx.cpu.getRegFromOperandType(operands[0].getName());
                         byte load = ctx.bus_read(addr);
                         ALUResult result = ALU.DEC(load);
                         ctx.bus_write(addr, (byte) result.result);
@@ -314,11 +314,11 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 byte load;
                 if (OperandType.isr8(operands[1])) {
-                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
                     load = params[0];
                 } else {
-                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
                     load = ctx.bus_read(addr);
                 }
                 ALUResult result = ALU.OR(ctx.cpu.getRegA(), load);
@@ -337,11 +337,11 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 byte load;
                 if (OperandType.isr8(operands[1])) {
-                    load = (byte) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
                     load = params[0];
                 } else {
-                    char addr = (char) ctx.cpu.getRegFromOperandTypr(operands[1].getName());
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
                     load = ctx.bus_read(addr);
                 }
                 ALUResult result = ALU.AND(ctx.cpu.getRegA(), load);

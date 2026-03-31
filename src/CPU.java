@@ -53,7 +53,7 @@ public class CPU {
         return ch;
     }
 
-    public Object getRegFromOperandTypr(OperandType op) {
+    public Object getRegFromOperandType(OperandType op) {
         switch (op) {
             case DOUBLE_REGISTER_AF -> {
                 return get18bit(new byte[]{FlagReg.getByte(), RegA});
@@ -107,7 +107,7 @@ public class CPU {
         return 0;
     }
 
-    public void setRegFromOperandTypr(OperandType op, Object val) {
+    public void setRegFromOperandType(OperandType op, Object val) {
         switch (op) {
             case DOUBLE_REGISTER_AF -> {
                 RegA = getHigh((char) val);
