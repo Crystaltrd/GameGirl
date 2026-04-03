@@ -3,7 +3,7 @@ import java.util.Map;
 import static java.util.Map.entry;
 
 public class EmuLookupTables {
-    public static Map<String, String> new_licensees = Map.<String, String>ofEntries(
+    public final static Map<String, String> new_licensees = Map.<String, String>ofEntries(
             entry("0", "none"),
             entry("1", "nintendo"),
             entry("8", "capcom"),
@@ -65,7 +65,7 @@ public class EmuLookupTables {
             entry("97", "kaneko"),
             entry("99", "pack in soft ")
     );
-    public static Map<String, String> old_licensees = Map.<String, String>ofEntries(
+    public final static Map<String, String> old_licensees = Map.<String, String>ofEntries(
             entry("0x00", "none"),
             entry("0x01", "nintendo"),
             entry("0x08", "capcom"),

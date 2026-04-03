@@ -5,30 +5,11 @@ import java.util.function.Function;
 
 public enum Opcodes {
     NONE("NONE"),
-    ADC("ADC"),
-    ADD("ADD"),
-    AND("AND"),
-    BIT("BIT"),
-    CALL("CALL"),
-    CCF("CCF"),
+    //  ==============================
+
     CP("CP"),
-    CPL("CPL"),
-    DAA("DAA"),
-    DEC("DEC"),
     DI("DI"),
-    EI("EI"),
-    HALT("HALT"),
-    ILLEGAL_D3("ILLEGAL_D3"),
-    ILLEGAL_DB("ILLEGAL_DB"),
-    ILLEGAL_DD("ILLEGAL_DD"),
-    ILLEGAL_E3("ILLEGAL_E3"),
-    ILLEGAL_E4("ILLEGAL_E4"),
-    ILLEGAL_EB("ILLEGAL_EB"),
-    ILLEGAL_EC("ILLEGAL_EC"),
-    ILLEGAL_ED("ILLEGAL_ED"),
-    ILLEGAL_F4("ILLEGAL_F4"),
-    ILLEGAL_FC("ILLEGAL_FC"),
-    ILLEGAL_FD("ILLEGAL_FD"),
+    DEC("DEC"),
     INC("INC"),
     JP("JP"),
     JR("JR"),
@@ -36,8 +17,23 @@ public enum Opcodes {
     LDH("LDH"),
     NOP("NOP"),
     OR("OR"),
-    POP("POP"),
     PREFIX("PREFIX"),
+    XOR("XOR"),
+    AND("AND"),
+    //  ==============================
+    CPL("CPL"),
+    CCF("CCF"),
+    SCF("SCF"),
+    HALT("HALT"),
+    STOP("STOP"),
+    ADC("ADC"),
+    ADD("ADD"),
+    
+    BIT("BIT"),
+    CALL("CALL"),
+    DAA("DAA"),
+    EI("EI"),
+    POP("POP"),
     PUSH("PUSH"),
     RES("RES"),
     RET("RET"),
@@ -52,16 +48,26 @@ public enum Opcodes {
     RRCA("RRCA"),
     RST("RST"),
     SBC("SBC"),
-    SCF("SCF"),
     SET("SET"),
     SLA("SLA"),
     SRA("SRA"),
     SRL("SRL"),
-    STOP("STOP"),
     SUB("SUB"),
     SWAP("SWAP"),
-    XOR("XOR");
-
+    // =================================
+    ILLEGAL_D3("ILLEGAL_D3"),
+    ILLEGAL_DB("ILLEGAL_DB"),
+    ILLEGAL_DD("ILLEGAL_DD"),
+    ILLEGAL_E3("ILLEGAL_E3"),
+    ILLEGAL_E4("ILLEGAL_E4"),
+    ILLEGAL_EB("ILLEGAL_EB"),
+    ILLEGAL_EC("ILLEGAL_EC"),
+    ILLEGAL_ED("ILLEGAL_ED"),
+    ILLEGAL_F4("ILLEGAL_F4"),
+    ILLEGAL_FC("ILLEGAL_FC"),
+    ILLEGAL_FD("ILLEGAL_FD"),
+    // =================================
+;
     public final String label;
     static final Function<Emu, Boolean> NONE_CB = (
             ctx -> {
@@ -71,14 +77,14 @@ public enum Opcodes {
     );
     static final Function<Emu, Boolean> NOP_CB = (
             ctx -> {
-                System.out.println("EXECUTING NOP");
+//                System.out.println("EXECUTING NOP");
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
             }
     );
     static final Function<Emu, Boolean> DI_CB = (
             ctx -> {
-                System.out.println("EXECUTING DI");
+//                System.out.println("EXECUTING DI");
                 ctx.cpu.setIME(false);
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
@@ -86,7 +92,7 @@ public enum Opcodes {
     );
     static final Function<Emu, Boolean> JP_CB = (
             ctx -> {
-                System.out.println("EXECUTING JP");
+//                System.out.println("EXECUTING JP");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -104,7 +110,7 @@ public enum Opcodes {
     );
     static final Function<Emu, Boolean> JR_CB = (
             ctx -> {
-                System.out.println("EXECUTING JR");
+//                System.out.println("EXECUTING JR");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -135,7 +141,7 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> LD_CB = (
             ctx -> {
-                System.out.println("EXECUTING LD");
+//                System.out.println("EXECUTING LD");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -210,7 +216,7 @@ public enum Opcodes {
             }
     );
     static final Function<Emu, Boolean> LDH_CB = ctx -> {
-        System.out.println("EXECUTING LDH");
+//        System.out.println("EXECUTING LDH");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
         byte[] params = ctx.cpu.getCurrParams();
@@ -235,7 +241,7 @@ public enum Opcodes {
     };
     static final Function<Emu, Boolean> XOR_CB = (
             ctx -> {
-                System.out.println("EXECUTING XOR");
+//                System.out.println("EXECUTING XOR");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -258,7 +264,7 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> CP_CB = (
             ctx -> {
-                System.out.println("EXECUTING CP");
+//                System.out.println("EXECUTING CP");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -283,10 +289,9 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> DEC_CB = (
             ctx -> {
-                System.out.println("EXECUTING DEC");
+//                System.out.println("EXECUTING DEC");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
-                byte[] params = ctx.cpu.getCurrParams();
                 if (OperandType.isr8(operands[0])) {
                     ALUResult result = ALU.DEC((byte) ctx.cpu.getRegFromOperandType(operands[0].getName()));
                     ctx.cpu.setRegFromOperandType(operands[0].getName(), result.result);
@@ -306,9 +311,34 @@ public enum Opcodes {
                 return true;
             }
     );
+
+    static final Function<Emu, Boolean> INC_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING INC");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                if (OperandType.isr8(operands[0])) {
+                    ALUResult result = ALU.INC((byte) ctx.cpu.getRegFromOperandType(operands[0].getName()));
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(), result.result);
+                    ctx.cpu.setFlagReg(result);
+                } else if (OperandType.isr16(operands[0])) {
+                    if (operands[0].isImmediate()) {
+                        ctx.cpu.setRegFromOperandType(operands[0].getName(), ctx.cpu.getRegFromOperandType(operands[0].getName()));
+                    } else {
+                        char addr = (char) ctx.cpu.getRegFromOperandType(operands[0].getName());
+                        byte load = ctx.bus_read(addr);
+                        ALUResult result = ALU.INC(load);
+                        ctx.bus_write(addr, (byte) result.result);
+                        ctx.cpu.setFlagReg(result);
+                    }
+                }
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
     static final Function<Emu, Boolean> OR_CB = (
             ctx -> {
-                System.out.println("EXECUTING OR");
+//                System.out.println("EXECUTING OR");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -331,7 +361,7 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> AND_CB = (
             ctx -> {
-                System.out.println("EXECUTING AND");
+//                System.out.println("EXECUTING AND");
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
@@ -367,6 +397,7 @@ public enum Opcodes {
         OR.callBack = OR_CB;
         CP.callBack = CP_CB;
         DEC.callBack = DEC_CB;
+        INC.callBack = INC_CB;
     }
 
     public Function<Emu, Boolean> callBack;

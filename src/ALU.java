@@ -55,6 +55,15 @@ public class ALU {
                 FlagOperation.SET,
                 FlagOperation.UNCHANGED);
     }
+    public static ALUResult INC(byte b1) {
+        ALUResult operationResult = new ALUResult();
+        byte result = (byte) (b1 + 1);
+        return getAluResult(operationResult,
+                result, result == 0 ? FlagOperation.SET : FlagOperation.RESET,
+                (b1 & 0xF) + (result & 0xF) > 0xF ? FlagOperation.SET :  FlagOperation.RESET,
+                FlagOperation.SET,
+                FlagOperation.UNCHANGED);
+    }
     private static ALUResult getAluResult(ALUResult operationResult, byte result, FlagOperation Z, FlagOperation H, FlagOperation N, FlagOperation C) {
         operationResult.result = result;
         operationResult.Dec = N;

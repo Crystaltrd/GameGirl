@@ -5,10 +5,8 @@ public class Main {
             if (args.length > 1) {
                 Emu emulator = new Emu(args[0], args[1]);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-    }
-
+     }
 }

@@ -52,20 +52,33 @@ public class CPU {
         ch |= (char) ((char) data[0] & 0x00FF);
         return ch;
     }
+    public char getRegAF(){
+        return get18bit(new byte[]{FlagReg.getByte(), RegA});
+    }
+    public char getRegBC(){
+        return get18bit(new byte[]{RegC, RegB});
+    }
 
+    public char getRegDE(){
+        return get18bit(new byte[]{RegE, RegD});
+    }
+
+    public char getRegHL(){
+        return get18bit(new byte[]{RegL, RegH});
+    }
     public Object getRegFromOperandType(OperandType op) {
         switch (op) {
             case DOUBLE_REGISTER_AF -> {
-                return get18bit(new byte[]{FlagReg.getByte(), RegA});
+                return getRegAF();
             }
             case DOUBLE_REGISTER_BC -> {
-                return get18bit(new byte[]{RegC, RegB});
+                return getRegBC();
             }
             case DOUBLE_REGISTER_DE -> {
-                return get18bit(new byte[]{RegE, RegD});
+                return getRegDE();
             }
             case DOUBLE_REGISTER_HL -> {
-                return get18bit(new byte[]{RegL, RegH});
+                return getRegHL();
             }
             case DOUBLE_REGISTER_SP -> {
                 return RegSP;
@@ -104,7 +117,7 @@ public class CPU {
                 return !FlagReg.isZeroFlag();
             }
         }
-        return 0;
+        return null;
     }
 
     public void setRegFromOperandType(OperandType op, Object val) {

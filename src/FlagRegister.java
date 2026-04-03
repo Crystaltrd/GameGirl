@@ -4,7 +4,6 @@ import lombok.ToString;
 
 @Setter
 @Getter
-@ToString
 public class FlagRegister {
     private boolean CarryFlag;
     private boolean HalfCarryFlag;
@@ -26,5 +25,12 @@ public class FlagRegister {
     }
     FlagRegister(byte data){
         setByte(data);
+    }
+    public String toString(){
+        return String.format("%c%c%c%c",ZeroFlag ? 'Z' : '-',
+                SubstractFlag ? 'N' : '-',
+                HalfCarryFlag ? 'H' : '-',
+                CarryFlag ? 'C' : '-'
+                );
     }
 }

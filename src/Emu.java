@@ -22,7 +22,7 @@ public class Emu {
     public byte[] WorkRAM = new byte[0xDFFF - 0xC000 + 1];
     public byte[] IORegisters = new byte[0xFF7F - 0xFF00 + 1]; //TODO: move to dedicated class later
     public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
-    public byte IEReg = 0;
+    public byte IEReg = 0x00;
 
     public byte bus_read(char addr) {
         if (addr < 0x8000)
@@ -30,7 +30,7 @@ public class Emu {
         else if (addr < 0xA000)
             return ppu.read(addr);
         else if (addr < 0xC000)
-            System.out.println("TODO: EXTERNAL RAM");
+            System.out.println("TODO: EXTERNAL RAM" );
         else if (addr < 0xE000)
             return WorkRAM[addr - 0xC000];
         else if (addr < 0xFE00)
@@ -55,7 +55,7 @@ public class Emu {
         else if (addr < 0xA000)
             ppu.write(addr, val);
         else if (addr < 0xC000)
-            System.out.println("EXTERNAL RAM: TODO");//TODO
+            System.out.println("EXTERNAL RAM: TODO" );//TODO
         else if (addr < 0xE000)
             WorkRAM[addr - 0xC000] = val;
         else if (addr < 0xFE00)
@@ -63,7 +63,7 @@ public class Emu {
         else if (addr < 0xFEA0)
             ppu.write(addr, val);
         else if (addr < 0xFF00)
-            System.out.println("Unwritable Memory");
+            System.out.println("Unwritable Memory" );
         else if (addr < 0xFF80)
             IORegisters[addr - 0xFF00] = val;
         else if (addr < 0xFFFF)
@@ -91,20 +91,10 @@ public class Emu {
 
     public boolean execute() {
         Instruction instruction = cpu.getCurrInstruction();
-        byte[] params = cpu.getCurrParams();
-        HexFormat commaFormat = HexFormat.ofDelimiter(" ").withPrefix("");
-        System.out.println(cpu);
         if (instruction.getMnemonic() == Opcodes.PREFIX) {
-            System.out.print("PREFIXED: ");
             cpu.setRegPC((char) (cpu.getRegPC() + 1));
             instruction = fetchInstr(true);
-            params = fetchParams(instruction);
         }
-        System.out.printf("%#04X: %-10s (0x%02X %s)%n",
-                (short) cpu.getRegPC(),
-                instruction.getMnemonic(),
-                bus_read(cpu.getRegPC()),
-                commaFormat.formatHex(params));
         return instruction.getMnemonic().callBack.apply(this);
     }
 
@@ -112,12 +102,21 @@ public class Emu {
         if (!cpu.isHalted()) {
             cpu.setCurrInstruction(fetchInstr(false));
             cpu.setCurrParams(fetchParams(cpu.getCurrInstruction()));
+            System.out.printf("%04X - 0x%02X: %-30sA:%02X F:%s BC:%04X DE:%04X HL:%04X SP:%04X\n", (short) cpu.getRegPC(),
+                    bus_read(cpu.getRegPC()),
+                    cpu.getCurrInstruction().toStringWithOperands(cpu.getCurrParams()),
+                    cpu.getRegA(),
+                    cpu.getFlagReg(),
+                    (short) cpu.getRegBC(),
+                    (short) cpu.getRegDE(),
+                    (short) cpu.getRegHL(),
+                    (short) cpu.getRegSP());
             return execute();
         }
         return true;
     }
 
-    Emu(String ROMFile, String OpCodesFile) throws IOException {
+    Emu(String ROMFile, String OpCodesFile) throws IOException, InterruptedException {
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
         cpu = new CPU();
@@ -126,7 +125,7 @@ public class Emu {
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         while (step()) {
-            
+            //Thread.sleep(1000);
         }
 
     }
