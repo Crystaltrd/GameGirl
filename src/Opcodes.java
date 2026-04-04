@@ -267,7 +267,12 @@ public enum Opcodes {
                                     ctx.cpu.setRegFromOperandType(operands[1].getName(), (char) (addr - 1));
                                 else if (operands[1].isIncrement())
                                     ctx.cpu.setRegFromOperandType(operands[1].getName(), (char) (addr + 1));
-                            } else {
+                            } else if (operands[1].getName() == OperandType.ADDRESS_DOUBLEWORD && !operands[1].isImmediate()) {
+                                char addr = CPU.get18bit(params);
+                                byte load = ctx.bus_read(addr);
+                                ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+                            }
+                            else{
                                 System.out.println("UNSUPPORTED");
                                 return false;
                             }
@@ -490,7 +495,8 @@ public enum Opcodes {
                     ctx.cpu.setFlagReg(result);
                 } else if (OperandType.isr16(operands[0])) {
                     if (operands[0].isImmediate()) {
-                        ctx.cpu.setRegFromOperandType(operands[0].getName(), ctx.cpu.getRegFromOperandType(operands[0].getName()));
+                        char new_val = (char) ((char) ctx.cpu.getRegFromOperandType(operands[0].getName()) + 1);
+                        ctx.cpu.setRegFromOperandType(operands[0].getName(), new_val);
                     } else {
                         char addr = (char) ctx.cpu.getRegFromOperandType(operands[0].getName());
                         byte load = ctx.bus_read(addr);
