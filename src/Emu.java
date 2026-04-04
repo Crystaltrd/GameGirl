@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HexFormat;
@@ -47,6 +48,21 @@ public class Emu {
             return IEReg;
         }
         return 0;
+    }
+
+    public char pop() {
+        byte lowbyte = bus_read(cpu.getRegSP());
+        cpu.setRegSP((char) (cpu.getRegSP() + 1));
+        byte highbyte = bus_read(cpu.getRegSP());
+        cpu.setRegSP((char) (cpu.getRegSP() + 1));
+        return CPU.get18bit(highbyte, lowbyte);
+    }
+
+    public void push(char word) {
+        cpu.setRegSP((char) (cpu.getRegSP() - 1));
+        bus_write(cpu.getRegSP(), CPU.getHigh(word));
+        cpu.setRegSP((char) (cpu.getRegSP() - 1));
+        bus_write(cpu.getRegSP(), CPU.getLow(word));
     }
 
     public void bus_write(char addr, byte val) {
@@ -111,23 +127,30 @@ public class Emu {
                     (short) cpu.getRegDE(),
                     (short) cpu.getRegHL(),
                     (short) cpu.getRegSP());
-            return execute();
+            boolean ret = execute();
+            if (cpu.isQueuedIME()) {
+                cpu.setQueuedIME(false);
+                cpu.setIME(true);
+            }
+            return ret;
         }
-        return true;
+        return false;
     }
 
     public String dbg_msg = "";
 
     public void dbg_update() {
         if (bus_read((char) 0xFF02) != 0) {
+            System.out.println("DBG: Found Char");
             char c = (char) bus_read((char) 0xFF01);
-            dbg_msg = dbg_msg+c;
+            dbg_msg = dbg_msg + c;
             bus_write((char) 0xFF02, (byte) 0);
         }
     }
-    public void dbg_print(){
-        if(!dbg_msg.isEmpty()) {
-            System.out.println("DBG: "+dbg_msg);
+
+    public void dbg_print() {
+        if (!dbg_msg.isEmpty()) {
+            System.out.println("DBG: " + dbg_msg);
         }
     }
 

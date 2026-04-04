@@ -47,7 +47,6 @@ public class ALU {
     }
 
     public static ALUResult DEC(byte b1) {
-        ALUResult operationResult = new ALUResult();
         byte result = (byte) (b1 - 1);
         return getAluResult(result, result == 0 ? FlagOperation.SET : FlagOperation.RESET,
                 (result & 0x0F) == 0x0F ? FlagOperation.SET : FlagOperation.RESET,

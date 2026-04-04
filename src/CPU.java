@@ -18,6 +18,7 @@ public class CPU {
     private char RegPC = 0x0100;
 
     private boolean IME = false;
+    private boolean QueuedIME = false;
     private boolean halted = false;
     private boolean stepping = false;
     private Instruction currInstruction;
@@ -50,6 +51,11 @@ public class CPU {
     public static char get18bit(byte[] data) {
         char ch = (char) ((data[1] << 8));
         ch |= (char) ((char) data[0] & 0x00FF);
+        return ch;
+    }
+    public static char get18bit(byte high,byte low) {
+        char ch = (char) ((high << 8));
+        ch |= (char) ((char) low & 0x00FF);
         return ch;
     }
     public char getRegAF(){
