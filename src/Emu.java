@@ -30,7 +30,7 @@ public class Emu {
         else if (addr < 0xA000)
             return ppu.read(addr);
         else if (addr < 0xC000)
-            System.out.println("TODO: EXTERNAL RAM" );
+            System.out.println("TODO: EXTERNAL RAM");
         else if (addr < 0xE000)
             return WorkRAM[addr - 0xC000];
         else if (addr < 0xFE00)
@@ -55,7 +55,7 @@ public class Emu {
         else if (addr < 0xA000)
             ppu.write(addr, val);
         else if (addr < 0xC000)
-            System.out.println("EXTERNAL RAM: TODO" );//TODO
+            System.out.println("EXTERNAL RAM: TODO");//TODO
         else if (addr < 0xE000)
             WorkRAM[addr - 0xC000] = val;
         else if (addr < 0xFE00)
@@ -63,7 +63,7 @@ public class Emu {
         else if (addr < 0xFEA0)
             ppu.write(addr, val);
         else if (addr < 0xFF00)
-            System.out.println("Unwritable Memory" );
+            System.out.println("Unwritable Memory");
         else if (addr < 0xFF80)
             IORegisters[addr - 0xFF00] = val;
         else if (addr < 0xFFFF)
@@ -116,6 +116,21 @@ public class Emu {
         return true;
     }
 
+    public String dbg_msg = "";
+
+    public void dbg_update() {
+        if (bus_read((char) 0xFF02) != 0) {
+            char c = (char) bus_read((char) 0xFF01);
+            dbg_msg = dbg_msg+c;
+            bus_write((char) 0xFF02, (byte) 0);
+        }
+    }
+    public void dbg_print(){
+        if(!dbg_msg.isEmpty()) {
+            System.out.println("DBG: "+dbg_msg);
+        }
+    }
+
     Emu(String ROMFile, String OpCodesFile) throws IOException, InterruptedException {
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
@@ -125,7 +140,8 @@ public class Emu {
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         while (step()) {
-            //Thread.sleep(1000);
+            dbg_update();
+            dbg_print();
         }
 
     }

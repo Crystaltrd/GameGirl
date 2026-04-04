@@ -62,10 +62,28 @@ public class CPU {
     public char getRegDE(){
         return get18bit(new byte[]{RegE, RegD});
     }
-
     public char getRegHL(){
         return get18bit(new byte[]{RegL, RegH});
     }
+    public void setRegHL(char val){
+        RegH = getHigh((char) val);
+        RegL = getLow((char) val);
+    }
+    public void setRegAF(char val){
+        RegA = getHigh((char) val);
+        FlagReg.setByte(getLow((char) val));
+    }
+    public void setRegBC(char val){
+        RegB = getHigh((char) val);
+        RegC = getLow((char) val);
+    }
+
+    public void setRegDE(char val){
+        RegD = getHigh((char) val);
+        RegE = getLow((char) val);
+    }
+
+ 
     public Object getRegFromOperandType(OperandType op) {
         switch (op) {
             case DOUBLE_REGISTER_AF -> {
