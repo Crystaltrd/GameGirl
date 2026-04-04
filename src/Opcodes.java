@@ -31,6 +31,7 @@ public enum Opcodes {
     RET("RET"),
     RETI("RETI"),
     CALL("CALL"),
+    RST("RST"),
     //  ==============================
     RES("RES"),
     RL("RL"),
@@ -42,6 +43,7 @@ public enum Opcodes {
     SWAP("SWAP"),
     SRL("SRL"),
     BIT("BIT"),
+    SUB("SUB"),
     //  ==============================
     RLA("RLA"),
     HALT("HALT"),
@@ -51,10 +53,8 @@ public enum Opcodes {
     RLCA("RLCA"),
     RRA("RRA"),
     RRCA("RRCA"),
-    RST("RST"),
     SBC("SBC"),
     SET("SET"),
-    SUB("SUB"),
     // =================================
     ILLEGAL_D3("ILLEGAL_D3"),
     ILLEGAL_DB("ILLEGAL_DB"),
@@ -385,7 +385,36 @@ public enum Opcodes {
                 return true;
             }
     );
-
+    static final Function<Emu, Boolean> SUB_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING SUB");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                int load;
+                int op1 = ctx.cpu.getRegA();
+                int result;
+                if (OperandType.isr8(operands[1])) {
+                    load = -(byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                    load = -params[0];
+                } else {
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                    load = -ctx.bus_read(addr);
+                }
+                result = op1 + load;
+                boolean z = (result & 0xFF) == 0;
+                boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
+                boolean c = result > 0xFF;
+                ctx.cpu.setCFlag(c);
+                ctx.cpu.setHFlag(h);
+                ctx.cpu.setZFlag(z);
+                ctx.cpu.setSFlag(true);
+                ctx.cpu.setRegA((byte) (result & 0xFF));
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
     static final Function<Emu, Boolean> ADD_CB = (
             ctx -> {
 //                System.out.println("EXECUTING ADD");
@@ -593,6 +622,7 @@ public enum Opcodes {
         RET.callBack = RET_CB;
         RETI.callBack = RETI_CB;
         RST.callBack = RST_CB;
+        SUB.callBack = SUB_CB;
     }
 
     public Function<Emu, Boolean> callBack;

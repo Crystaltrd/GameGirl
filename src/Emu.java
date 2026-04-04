@@ -25,7 +25,7 @@ public class Emu {
     public byte[] IORegisters = new byte[0xFF7F - 0xFF00 + 1]; //TODO: move to dedicated class later
     public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
     public byte IEReg = 0x00;
-
+    public boolean debug = false;
     public byte bus_read(char addr) {
         if (addr < 0x8000)
             return cartridge.read(addr);
@@ -44,7 +44,7 @@ public class Emu {
         else if (addr < 0xFF80)
             return IORegisters[addr - 0xFF00];
         else if (addr < 0xFFFF)
-            return HRAM[addr & 0x00FF];
+            return HRAM[addr - 0xFF80];
         else {
             return IEReg;
         }
@@ -108,16 +108,18 @@ public class Emu {
 
     public boolean execute() {
         Instruction instruction = cpu.getCurrInstruction();
-        if (instruction.getMnemonic() == Opcodes.PREFIX) {
-            cpu.setRegPC((char) (cpu.getRegPC() + 1));
-            instruction = fetchInstr(true);
-        }
+
         return instruction.getMnemonic().callBack.apply(this);
     }
 
     public boolean step() {
         if (!cpu.isHalted()) {
             cpu.setCurrInstruction(fetchInstr(false));
+            if (cpu.getCurrInstruction().getMnemonic() == Opcodes.PREFIX) {
+                cpu.setRegPC((char) (cpu.getRegPC() + 1));
+                debug = true;
+                cpu.setCurrInstruction(fetchInstr(true));
+            }
             cpu.setCurrParams(fetchParams(cpu.getCurrInstruction()));
             System.out.printf("%04X - 0x%02X: %-30sA:%02X F:%s BC:%04X DE:%04X HL:%04X SP:%04X\n", (short) cpu.getRegPC(),
                     bus_read(cpu.getRegPC()),
@@ -164,6 +166,8 @@ public class Emu {
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         while (step()) {
+            if(debug)
+                scanner.nextLine();
             dbg_update();
             dbg_print();
         }
