@@ -187,7 +187,18 @@ public enum Opcodes {
                 return true;
             }
     );
-
+    static final Function<Emu, Boolean> RST_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING RST");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                char nextPC = (char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes());
+                ctx.push(nextPC);
+                char addr = (char) Integer.parseInt(operands[0].getName().getLabel().replace("$", ""), 16);
+                ctx.cpu.setRegPC(addr);
+                return true;
+            }
+    );
     static final Function<Emu, Boolean> RET_CB = (
             ctx -> {
 //                System.out.println("EXECUTING RET");
@@ -272,8 +283,7 @@ public enum Opcodes {
                                 char addr = CPU.get18bit(params);
                                 byte load = ctx.bus_read(addr);
                                 ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
-                            }
-                            else{
+                            } else {
                                 System.out.println("UNSUPPORTED");
                                 return false;
                             }
@@ -582,6 +592,7 @@ public enum Opcodes {
         CALL.callBack = CALL_CB;
         RET.callBack = RET_CB;
         RETI.callBack = RETI_CB;
+        RST.callBack = RST_CB;
     }
 
     public Function<Emu, Boolean> callBack;
