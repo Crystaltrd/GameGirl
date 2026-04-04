@@ -44,6 +44,7 @@ public enum Opcodes {
     SWAP("SWAP"),
     SRL("SRL"),
     BIT("BIT"),
+    SET("SET"),
     //  ==============================
     RLA("RLA"),
     HALT("HALT"),
@@ -54,7 +55,6 @@ public enum Opcodes {
     RRA("RRA"),
     RRCA("RRCA"),
     SBC("SBC"),
-    SET("SET"),
     // =================================
     ILLEGAL_D3("ILLEGAL_D3"),
     ILLEGAL_DB("ILLEGAL_DB"),
@@ -168,6 +168,7 @@ public enum Opcodes {
                 return true;
             }
     );
+
     static final Function<Emu, Boolean> CALL_CB = (
             ctx -> {
 //                System.out.println("EXECUTING CALL");
