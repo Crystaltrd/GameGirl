@@ -1,8 +1,6 @@
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.HexFormat;
 import java.util.Scanner;
 
 // 0x0000 -> 0x3FFF: ROM Bank 0
@@ -56,7 +54,7 @@ public class Emu {
         cpu.setRegSP((char) (cpu.getRegSP() + 1));
         byte highbyte = bus_read(cpu.getRegSP());
         cpu.setRegSP((char) (cpu.getRegSP() + 1));
-        return CPU.get18bit(highbyte, lowbyte);
+        return CPU.get16bit(highbyte, lowbyte);
     }
 
     public void push(char word) {
@@ -157,7 +155,7 @@ public class Emu {
         }
     }
 
-    Emu(String ROMFile, String OpCodesFile) throws IOException, InterruptedException {
+    Emu(String ROMFile, String OpCodesFile) throws IOException {
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
         cpu = new CPU();

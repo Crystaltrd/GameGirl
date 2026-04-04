@@ -48,28 +48,28 @@ public class CPU {
             FlagReg.setSubstractFlag(false);
 
     }
-    public static char get18bit(byte[] data) {
+    public static char get16bit(byte[] data) {
         char ch = (char) ((data[1] << 8));
         ch |= (char) ((char) data[0] & 0x00FF);
         return ch;
     }
-    public static char get18bit(byte high,byte low) {
+    public static char get16bit(byte high, byte low) {
         char ch = (char) ((high << 8));
         ch |= (char) ((char) low & 0x00FF);
         return ch;
     }
     public char getRegAF(){
-        return get18bit(new byte[]{FlagReg.getByte(), RegA});
+        return get16bit(new byte[]{FlagReg.getByte(), RegA});
     }
     public char getRegBC(){
-        return get18bit(new byte[]{RegC, RegB});
+        return get16bit(new byte[]{RegC, RegB});
     }
 
     public char getRegDE(){
-        return get18bit(new byte[]{RegE, RegD});
+        return get16bit(new byte[]{RegE, RegD});
     }
     public char getRegHL(){
-        return get18bit(new byte[]{RegL, RegH});
+        return get16bit(new byte[]{RegL, RegH});
     }
     public void setRegHL(char val){
         RegH = getHigh((char) val);
