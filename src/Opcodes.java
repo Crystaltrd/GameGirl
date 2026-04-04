@@ -32,6 +32,7 @@ public enum Opcodes {
     RETI("RETI"),
     CALL("CALL"),
     RST("RST"),
+    SUB("SUB"),
     //  ==============================
     RES("RES"),
     RL("RL"),
@@ -43,7 +44,6 @@ public enum Opcodes {
     SWAP("SWAP"),
     SRL("SRL"),
     BIT("BIT"),
-    SUB("SUB"),
     //  ==============================
     RLA("RLA"),
     HALT("HALT"),
