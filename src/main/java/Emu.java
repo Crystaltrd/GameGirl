@@ -1,9 +1,6 @@
 
-import com.sun.jdi.event.BreakpointEvent;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Scanner;
 
 // 0x0000 -> 0x3FFF: ROM Bank 0
@@ -26,7 +23,8 @@ public class Emu {
     public byte[] IORegisters = new byte[0xFF7F - 0xFF00 + 1]; //TODO: move to dedicated class later
     public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
     public byte IEReg = 0x00;
-    public boolean gameboyDoctor = false;
+    public boolean gameboyDoctor;
+    public boolean silent; 
 
     public byte bus_read(char addr) {
         if (addr < 0x8000)
@@ -121,18 +119,20 @@ public class Emu {
                 cpu.setRegPC((char) (cpu.getRegPC() + 1));
                 cpu.setCurrInstruction(fetchInstr(true));
             }
+
             cpu.setCurrParams(fetchParams(cpu.getCurrInstruction()));
-            if (!gameboyDoctor) {
-                System.out.printf("%04X - 0x%02X: %-30sA:%02X F:%s BC:%04X DE:%04X HL:%04X SP:%04X\n", (short) cpu.getRegPC(),
-                        bus_read(cpu.getRegPC()),
-                        cpu.getCurrInstruction().toStringWithOperands(cpu.getCurrParams()),
-                        cpu.getRegA(),
-                        cpu.getFlagReg(),
-                        (short) cpu.getRegBC(),
-                        (short) cpu.getRegDE(),
-                        (short) cpu.getRegHL(),
-                        (short) cpu.getRegSP());
-            }
+            if (!silent)
+                if (!gameboyDoctor) {
+                    System.out.printf("%04X - 0x%02X: %-30sA:%02X F:%s BC:%04X DE:%04X HL:%04X SP:%04X\n", (short) cpu.getRegPC(),
+                            bus_read(cpu.getRegPC()),
+                            cpu.getCurrInstruction().toStringWithOperands(cpu.getCurrParams()),
+                            cpu.getRegA(),
+                            cpu.getFlagReg(),
+                            (short) cpu.getRegBC(),
+                            (short) cpu.getRegDE(),
+                            (short) cpu.getRegHL(),
+                            (short) cpu.getRegSP());
+                }
             boolean ret = execute();
             if (cpu.isQueuedIME()) {
                 cpu.setQueuedIME(false);
@@ -143,45 +143,53 @@ public class Emu {
         return false;
     }
 
-    public String dbg_msg = "";
+    //public StringBuilder dbg_msg = new StringBuilder();
 
-    public void dbg_update() {
-        if (bus_read((char) 0xFF02) != 0) {
-            char c = (char) bus_read((char) 0xFF01);
-            dbg_msg = dbg_msg + c;
-            bus_write((char) 0xFF02, (byte) 0);
-        }
-    }
+//    public void dbg_update() {
+//        if (bus_read((char) 0xFF02) != 0) {
+//            char c = (char) bus_read((char) 0xFF01);
+//            dbg_msg.append(c);
+//            bus_write((char) 0xFF02, (byte) 0);
+//        }
+//    }
 
-    public void dbg_print() {
-        if (!dbg_msg.isEmpty()) {
-            System.out.println("DBG: " + dbg_msg);
-        }
-    }
+//    public void dbg_print() {
+//        if (!dbg_msg.isEmpty()) {
+//            System.out.println("DBG: " + dbg_msg);
+//        }
+//    }
 
-    Emu(String ROMFile) throws IOException {
-        cartridge = new Cartridge(new File(ROMFile));
-        var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");
-        instructionSet = InstructionSet.fromFile(instructionStream);
-        cpu = new CPU();
-        gameboyDoctor = false;
-        if(!gameboyDoctor) {
-            System.out.println(cartridge.header.humanReadable());
-            Scanner scanner = new Scanner(System.in);
-            scanner.nextLine();
-        }
-        cpu.setRegPC((char) 0x0100);
-        bus_write((char) 0xFF44, (byte) 0x90);
-        do {
+    public boolean emuStep() {
+        if (!silent)
             if (gameboyDoctor) {
                 System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
-                        cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) ((char) cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
+                        cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) (cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
             }
-            else {
-                dbg_update();
-                dbg_print();
-            }
-        } while (step());
 
+        return step();
+    }
+
+    Emu(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
+        try {
+            cartridge = new Cartridge(ROMFile);
+            var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");
+            instructionSet = InstructionSet.fromFile(instructionStream);
+            cpu = new CPU();
+            this.gameboyDoctor = gameboyDoctor;
+            this.silent = silent;
+            cpu.setRegPC((char) 0x0100);
+            bus_write((char) 0xFF44, (byte) 0x90);
+            if (!silent) {
+                if (!gameboyDoctor) {
+                    System.out.println(cartridge.header.humanReadable());
+                    if (interactive) {
+                        Scanner scanner = new Scanner(System.in);
+                        scanner.nextLine();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -1,7 +1,6 @@
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.*;
 
 class CartridgeHeader {
@@ -20,7 +19,7 @@ class CartridgeHeader {
     public byte header_checksum_raw;
     public boolean checksum_passed;
     public byte[] global_checksum_raw = new byte[0x014F - 0x014E + 1];
-    public int external_ram_size = 0;
+    public int external_ram_size ;
 
 
     CartridgeHeader(byte[] data) {
@@ -95,8 +94,8 @@ public class Cartridge {
     public byte[] data;
     public byte[] external_wram;
 
-    Cartridge(File rom_file) throws IOException {
-        data = Files.readAllBytes(rom_file.toPath());
+    Cartridge(InputStream rom_file) throws IOException {
+        data = rom_file.readAllBytes();
         header = new CartridgeHeader(data);
         external_wram = new byte[header.external_ram_size];
     }
