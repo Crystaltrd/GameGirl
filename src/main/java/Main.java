@@ -1,9 +1,8 @@
-import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) {
         try {
-            if (args.length > 1) {
+            if (args.length > 0) {
                 Emu emulator = new Emu(args[0]);
             }
         } catch (Exception e) {
