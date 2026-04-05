@@ -164,8 +164,7 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 switch (operands[0].getName()) {
                     case DOUBLE_REGISTER_HL -> ctx.cpu.setRegPC(ctx.cpu.getRegHL());
-                    case ADDRESS_DOUBLEWORD -> 
-                        ctx.cpu.setRegPC(CPU.get16bit(params));
+                    case ADDRESS_DOUBLEWORD -> ctx.cpu.setRegPC(CPU.get16bit(params));
                     default -> {
                         if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
                             ctx.cpu.setRegPC(CPU.get16bit(params));
@@ -642,18 +641,19 @@ public enum Opcodes {
                 int op1 = ctx.cpu.getRegA();
                 int result;
                 if (OperandType.isr8(operands[1])) {
-                    load = -(byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
-                    load = -params[0];
+                    load = params[0];
                 } else {
                     char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
-                    load = -ctx.bus_read(addr);
+                    load = ctx.bus_read(addr);
                 }
-                load = load - (ctx.cpu.getFlagReg().isCarryFlag() ? 1 : 0);
-                result = op1 + load;
+                int cf = (ctx.cpu.getFlagReg().isCarryFlag() ? 1 : 0);
+                int val = load + cf;
+                result = op1 - val;
                 boolean z = (result & 0xFF) == 0;
-                boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                boolean c = result > 0xFF;
+                boolean h = -(load & 0xF) + (op1 & 0xF) - cf < 0;
+                boolean c = ((char)(op1 & 0xFF) - ((char)load & (char)0xFF) - cf) < 0;
                 ctx.cpu.setCFlag(c);
                 ctx.cpu.setHFlag(h);
                 ctx.cpu.setZFlag(z);
@@ -743,11 +743,11 @@ public enum Opcodes {
                     char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
                     load = ctx.bus_read(addr);
                 }
-                load = load + (ctx.cpu.getFlagReg().isCarryFlag() ? 1 : 0);
-                result = op1 + load;
+                int cf = (ctx.cpu.getFlagReg().isCarryFlag() ? 1 : 0);
+                result = op1 + load + cf;
                 boolean z = (result & 0xFF) == 0;
-                boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                boolean c = (byte) result > (byte) 0xFF;
+                boolean h = (load & 0xF) + (op1 & 0xF) + cf > 0xF;
+                boolean c = (load & 0xFF) + (op1 & 0xFF) + cf > 0xFF;
                 ctx.cpu.setCFlag(c);
                 ctx.cpu.setHFlag(h);
                 ctx.cpu.setZFlag(z);

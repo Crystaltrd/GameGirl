@@ -147,7 +147,6 @@ public class Emu {
 
     public void dbg_update() {
         if (bus_read((char) 0xFF02) != 0) {
-            System.out.println("DBG: Found Char");
             char c = (char) bus_read((char) 0xFF01);
             dbg_msg = dbg_msg + c;
             bus_write((char) 0xFF02, (byte) 0);
@@ -168,13 +167,17 @@ public class Emu {
         cpu.setRegPC((char) 0x0100);
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
+        gameboyDoctor = false;
         bus_write((char) 0xFF44, (byte) 0x90);
         do {
-            if (gameboyDoctor)
+            if (gameboyDoctor) {
                 System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
                         cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) ((char) cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
-            dbg_update();
-            dbg_print();
+            }
+            else {
+                dbg_update();
+                dbg_print();
+            }
         } while (step());
 
     }
