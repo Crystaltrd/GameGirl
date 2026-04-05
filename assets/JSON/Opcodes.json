@@ -4969,7 +4969,7 @@
 			],
 			"operands": [
 				{
-					"name": "C",
+					"name": "CC",
 					"immediate": true
 				}
 			],
