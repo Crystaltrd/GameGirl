@@ -163,11 +163,13 @@ public class Emu {
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
         cpu = new CPU();
-        System.out.println(cartridge.header.humanReadable());
-        cpu.setRegPC((char) 0x0100);
-        Scanner scanner = new Scanner(System.in);
-        scanner.nextLine();
         gameboyDoctor = false;
+        if(!gameboyDoctor) {
+            System.out.println(cartridge.header.humanReadable());
+            Scanner scanner = new Scanner(System.in);
+            scanner.nextLine();
+        }
+        cpu.setRegPC((char) 0x0100);
         bus_write((char) 0xFF44, (byte) 0x90);
         do {
             if (gameboyDoctor) {

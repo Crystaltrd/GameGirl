@@ -919,7 +919,19 @@ public enum Opcodes {
         SRL.callBack = SRL_CB;
         SWAP.callBack = SWAP_CB;
     }
-
+/* CPU TESTS:
+*  TODO: 01-special.gb: NOT PASSED(Instrs not implemented yet)
+*  TODO: 02-interrupts.gb: NOT PASSED(Timer and interrupts not implemented)
+*  03-op sp,hl.gb : PASSED
+*  04-op r,imm.gb : PASSED
+*  TODO: 05-op rp.gb: NOT TESTED YET
+*  TODO: 06-ld r,r.gb: NOT TESTED YET
+*  07-jr,jp,call,ret,rst.gb: PASSED
+*  TODO: 08-misc instrs.gb: NOT TESTED YET 
+*  TODO: 09-op r,r.gb: NOT TESTED YET
+*  TODO: 10-bit ops.gb: NOT TESTED YET
+*  TODO: 11-op a,(hl).gb: NOT TESTED YET
+* */
     public Function<Emu, Boolean> callBack;
 
     Opcodes(String label) {
