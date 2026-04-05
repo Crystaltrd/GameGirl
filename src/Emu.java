@@ -1,10 +1,9 @@
 
 import com.sun.jdi.event.BreakpointEvent;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Scanner;
 
 // 0x0000 -> 0x3FFF: ROM Bank 0
@@ -27,7 +26,7 @@ public class Emu {
     public byte[] IORegisters = new byte[0xFF7F - 0xFF00 + 1]; //TODO: move to dedicated class later
     public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
     public byte IEReg = 0x00;
-    public boolean debug = false;
+    public boolean gameboyDoctor = false;
 
     public byte bus_read(char addr) {
         if (addr < 0x8000)
@@ -120,19 +119,20 @@ public class Emu {
             cpu.setCurrInstruction(fetchInstr(false));
             if (cpu.getCurrInstruction().getMnemonic() == Opcodes.PREFIX) {
                 cpu.setRegPC((char) (cpu.getRegPC() + 1));
-                //debug = true;
                 cpu.setCurrInstruction(fetchInstr(true));
             }
             cpu.setCurrParams(fetchParams(cpu.getCurrInstruction()));
-            System.out.printf("%04X - 0x%02X: %-30sA:%02X F:%s BC:%04X DE:%04X HL:%04X SP:%04X\n", (short) cpu.getRegPC(),
-                    bus_read(cpu.getRegPC()),
-                    cpu.getCurrInstruction().toStringWithOperands(cpu.getCurrParams()),
-                    cpu.getRegA(),
-                    cpu.getFlagReg(),
-                    (short) cpu.getRegBC(),
-                    (short) cpu.getRegDE(),
-                    (short) cpu.getRegHL(),
-                    (short) cpu.getRegSP());
+            if (!gameboyDoctor) {
+                System.out.printf("%04X - 0x%02X: %-30sA:%02X F:%s BC:%04X DE:%04X HL:%04X SP:%04X\n", (short) cpu.getRegPC(),
+                        bus_read(cpu.getRegPC()),
+                        cpu.getCurrInstruction().toStringWithOperands(cpu.getCurrParams()),
+                        cpu.getRegA(),
+                        cpu.getFlagReg(),
+                        (short) cpu.getRegBC(),
+                        (short) cpu.getRegDE(),
+                        (short) cpu.getRegHL(),
+                        (short) cpu.getRegSP());
+            }
             boolean ret = execute();
             if (cpu.isQueuedIME()) {
                 cpu.setQueuedIME(false);
@@ -161,8 +161,6 @@ public class Emu {
     }
 
     Emu(String ROMFile, String OpCodesFile) throws IOException {
-        FileWriter fileWriter = new FileWriter("log.log");
-        PrintWriter printWriter = new PrintWriter(fileWriter);
         cartridge = new Cartridge(new File(ROMFile));
         instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
         cpu = new CPU();
@@ -171,15 +169,13 @@ public class Emu {
         Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         bus_write((char) 0xFF44, (byte) 0x90);
-        printWriter.write(String.format("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
-                cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) ((char) cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3))));
-
-        while (step()) {
-            printWriter.write(String.format("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
-                    cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) ((char) cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3))));
+        do {
+            if (gameboyDoctor)
+                System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
+                        cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) ((char) cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
             dbg_update();
             dbg_print();
-        }
-        printWriter.close();
+        } while (step());
+
     }
 }

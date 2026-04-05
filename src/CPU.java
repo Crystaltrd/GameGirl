@@ -196,6 +196,13 @@ public class CPU {
         return (byte) ((word & 0xFF00) >> 8);
     }
 
+    public static byte getLow(byte word) {
+        return (byte) (word & 0x0F);
+    }
+
+    public static byte getHigh(byte word) {
+        return (byte) (((word & 0xF0) >> 4) & 0x0F);
+    }
     public String toString() {
         HexFormat hex = HexFormat.of();
         return "CPU{" +
