@@ -5,22 +5,26 @@ import lombok.ToString;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 @Setter
 @Getter
 @ToString
 public class InstructionSet {
-    private Map<String,Instruction> unprefixed;
-    private Map<String,Instruction> cbprefixed;
-    public static InstructionSet fromFile(File opcodesFile) throws IOException {
+    private Map<String, Instruction> unprefixed;
+    private Map<String, Instruction> cbprefixed;
+
+    public static InstructionSet fromFile(InputStream opcodesFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(opcodesFile, InstructionSet.class);
     }
-    public Instruction getUnprefixedInstruction(String opcode){
+
+    public Instruction getUnprefixedInstruction(String opcode) {
         return unprefixed.getOrDefault(opcode, new Instruction());
     }
-    public Instruction getCBPrefixedInstruction(String opcode){
+
+    public Instruction getCBPrefixedInstruction(String opcode) {
         return cbprefixed.getOrDefault(opcode, new Instruction());
     }
 }
