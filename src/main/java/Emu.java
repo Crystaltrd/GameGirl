@@ -159,9 +159,10 @@ public class Emu {
         }
     }
 
-    Emu(String ROMFile, String OpCodesFile) throws IOException {
+    Emu(String ROMFile) throws IOException {
         cartridge = new Cartridge(new File(ROMFile));
-        instructionSet = InstructionSet.fromFile(new File(OpCodesFile));
+        var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");
+        instructionSet = InstructionSet.fromFile(instructionStream);
         cpu = new CPU();
         gameboyDoctor = false;
         if(!gameboyDoctor) {

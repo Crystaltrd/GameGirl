@@ -5,6 +5,7 @@ import lombok.ToString;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 @Setter
@@ -14,7 +15,7 @@ public class InstructionSet {
     private Map<String, Instruction> unprefixed;
     private Map<String, Instruction> cbprefixed;
 
-    public static InstructionSet fromFile(File opcodesFile) throws IOException {
+    public static InstructionSet fromFile(InputStream opcodesFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(opcodesFile, InstructionSet.class);
     }
