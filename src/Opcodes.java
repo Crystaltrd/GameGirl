@@ -34,9 +34,9 @@ public enum Opcodes {
     SUB("SUB"),
     RL("RL"),
     RLA("RLA"),
+    RLC("RLC"),
     //  ==============================
     RES("RES"),
-    RLC("RLC"),
     RRC("RRC"),
     RR("RR"),
     SLA("SLA"),
@@ -260,6 +260,36 @@ public enum Opcodes {
                     ctx.bus_write(addr,load);
                 }
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+                return true;
+            }
+    );
+    static final Function<Emu, Boolean> RLC_CB (
+            ctx -> {
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte load;
+                if(OperandType.isr8(operands[0])){
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName();
+                }
+                else {
+                    char addr = ctx.cpu.getRegHL();
+                    load = ctx.bus_read(addr);
+                }
+                boolean bit7 =  (load & 0b10000000) != 0;
+                ctx.cpu.setCFlag(bit7);
+                load = (byte) (load << 1);
+                load = (byte) (load |(bit7 ? 1 : 0))
+                ctx.cpu.setZFlag(load == 0);
+                ctx.cpu.setSFlag(false);
+                ctx.cpu.setHFlag(false);
+                if(OperandType.isr8(operands[0])){
+                    ctx.cpu.setRegFromOperandType(operands[0], load);
+                }
+                else{
+                    char addr = ctx.cpu.getRegHL();
+                    ctx.cpu.bus_write(addr, load);
+                }
+                ctx.cpu.setRegPC((char)(ctx.cpu.getRegPC() + 1));
                 return true;
             }
     );
@@ -671,6 +701,7 @@ public enum Opcodes {
         SUB.callBack = SUB_CB;
         RL.callBack = RL_CB;
         RLA.callBack = RLA_CB;
+        RLC.callBack = RLC_CB()
     }
 
     public Function<Emu, Boolean> callBack;
