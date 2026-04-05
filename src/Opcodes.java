@@ -164,11 +164,8 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 switch (operands[0].getName()) {
                     case DOUBLE_REGISTER_HL -> ctx.cpu.setRegPC(ctx.cpu.getRegHL());
-                    case ADDRESS_DOUBLEWORD -> {
-                        if(CPU.get16bit(params) == 0xC000)
-                            ctx.debug = false;
+                    case ADDRESS_DOUBLEWORD -> 
                         ctx.cpu.setRegPC(CPU.get16bit(params));
-                    }
                     default -> {
                         if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
                             ctx.cpu.setRegPC(CPU.get16bit(params));
@@ -194,8 +191,7 @@ public enum Opcodes {
                     if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
                         ctx.push(nextPC);
                         ctx.cpu.setRegPC(CPU.get16bit(params));
-                    }
-                    else
+                    } else
                         ctx.cpu.setRegPC(nextPC);
                 }
                 return true;
@@ -220,7 +216,7 @@ public enum Opcodes {
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
                 char nextPC = (char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes());
-                if (params.length == 0) {
+                if (operands.length == 0) {
                     ctx.cpu.setRegPC(ctx.pop());
                 } else {
                     if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
@@ -258,8 +254,9 @@ public enum Opcodes {
                 boolean c = ctx.cpu.getFlagReg().isCarryFlag();
                 ctx.cpu.setCFlag((load & 0b00000001) != 0);
                 load = (byte) (load >> 1);
+                load = (byte) (load & 0b01111111);
                 load = (byte) (load | (c ? 0b10000000 : 0));
-                ctx.cpu.setZFlag(load == 0);
+                ctx.cpu.setZFlag(false);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
                 ctx.cpu.setRegA(load);
@@ -287,10 +284,38 @@ public enum Opcodes {
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
                 if (OperandType.isr8(operands[0])) {
-                    ctx.cpu.setRegFromOperandType(operands[0].getName(),load);
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                 } else {
                     char addr = ctx.cpu.getRegHL();
-                    ctx.bus_write(addr,load);
+                    ctx.bus_write(addr, load);
+                }
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+                return true;
+            }
+    );
+
+    static final Function<Emu, Boolean> SWAP_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING SWAP");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte load;
+                if (OperandType.isr8(operands[0])) {
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+                } else {
+                    char addr = ctx.cpu.getRegHL();
+                    load = ctx.bus_read(addr);
+                }
+                load = (byte) (CPU.getHigh(load) | CPU.getLow(load) << 4);
+                ctx.cpu.setZFlag(load == 0);
+                ctx.cpu.setSFlag(false);
+                ctx.cpu.setHFlag(false);
+                ctx.cpu.setCFlag(false);
+                if (OperandType.isr8(operands[0])) {
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+                } else {
+                    char addr = ctx.cpu.getRegHL();
+                    ctx.bus_write(addr, load);
                 }
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
                 return true;
@@ -311,15 +336,16 @@ public enum Opcodes {
                 boolean c = ctx.cpu.getFlagReg().isCarryFlag();
                 ctx.cpu.setCFlag((load & 0b00000001) != 0);
                 load = (byte) (load >> 1);
+                load = (byte) (load & 0b01111111);
                 load = (byte) (load | (c ? 0b10000000 : 0));
                 ctx.cpu.setZFlag(load == 0);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
                 if (OperandType.isr8(operands[0])) {
-                    ctx.cpu.setRegFromOperandType(operands[0].getName(),load);
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                 } else {
                     char addr = ctx.cpu.getRegHL();
-                    ctx.bus_write(addr,load);
+                    ctx.bus_write(addr, load);
                 }
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
                 return true;
@@ -343,10 +369,10 @@ public enum Opcodes {
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
                 if (OperandType.isr8(operands[0])) {
-                    ctx.cpu.setRegFromOperandType(operands[0].getName(),load);
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                 } else {
                     char addr = ctx.cpu.getRegHL();
-                    ctx.bus_write(addr,load);
+                    ctx.bus_write(addr, load);
                 }
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
                 return true;
@@ -358,28 +384,26 @@ public enum Opcodes {
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte load;
-                if(OperandType.isr8(operands[0])){
+                if (OperandType.isr8(operands[0])) {
                     load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
-                }
-                else {
+                } else {
                     char addr = ctx.cpu.getRegHL();
                     load = ctx.bus_read(addr);
                 }
-                boolean bit7 =  (load & 0b10000000) != 0;
+                boolean bit7 = (load & 0b10000000) != 0;
                 ctx.cpu.setCFlag(bit7);
                 load = (byte) (load << 1);
-                load = (byte) (load |(bit7 ? 1 : 0));
+                load = (byte) (load | (bit7 ? 1 : 0));
                 ctx.cpu.setZFlag(load == 0);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
-                if(OperandType.isr8(operands[0])){
+                if (OperandType.isr8(operands[0])) {
                     ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
-                }
-                else{
+                } else {
                     char addr = ctx.cpu.getRegHL();
                     ctx.bus_write(addr, load);
                 }
-                ctx.cpu.setRegPC((char)(ctx.cpu.getRegPC() + 1));
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
                 return true;
             }
     );
@@ -388,15 +412,15 @@ public enum Opcodes {
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte load = ctx.cpu.getRegA();
-                boolean bit7 =  (load & 0b10000000) != 0;
+                boolean bit7 = (load & 0b10000000) != 0;
                 ctx.cpu.setCFlag(bit7);
                 load = (byte) (load << 1);
-                load = (byte) (load |(bit7 ? 1 : 0));
+                load = (byte) (load | (bit7 ? 1 : 0));
                 ctx.cpu.setZFlag(false);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
                 ctx.cpu.setRegA(load);
-                ctx.cpu.setRegPC((char)(ctx.cpu.getRegPC() + 1));
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
                 return true;
             }
     );
@@ -498,6 +522,10 @@ public enum Opcodes {
                             if (OperandType.isr8(operands[1])) {
                                 byte load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                                 ctx.bus_write(CPU.get16bit(params), load);
+                            } else if (operands[1].getName() == OperandType.DOUBLE_REGISTER_SP) {
+                                char load = ctx.cpu.getRegSP();
+                                ctx.bus_write(CPU.get16bit(params), CPU.getLow(load));
+                                ctx.bus_write((char) (CPU.get16bit(params) + 1), CPU.getHigh(load));
                             } else {
                                 System.out.println("UNSUPPORTED");
                                 return false;
@@ -508,9 +536,14 @@ public enum Opcodes {
                         }
                         break;
                     case 3:
-                        ALUResult result = ALU.addByteToReg(ctx.cpu.getRegSP(), params[0], true);
-                        ctx.cpu.setCFlag(result.Carry == FlagOperation.SET);
-                        ctx.cpu.setRegFromOperandType(OperandType.DOUBLE_REGISTER_HL, result.result);
+                        int load = ctx.cpu.getRegSP();
+                        int op1 = params[0];
+                        int result = op1 + load;
+                        ctx.cpu.setHFlag((load & 0xF) + (op1 & 0xF) > 0xF);
+                        ctx.cpu.setCFlag((load & 0xFF) + (op1 & 0xFF) > 0xFF);
+                        ctx.cpu.setZFlag(false);
+                        ctx.cpu.setSFlag(false);
+                        ctx.cpu.setRegHL((char) (result & 0xFFFF));
                         break;
                     default:
                         System.out.println("UNSUPPORTED");
@@ -574,21 +607,21 @@ public enum Opcodes {
                 Instruction instruction = ctx.cpu.getCurrInstruction();
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
-                int load;
-                int op1 = ctx.cpu.getRegA();
+                byte load;
+                byte op1 = ctx.cpu.getRegA();
                 int result;
                 if (OperandType.isr8(operands[1])) {
-                    load = -(byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
                 } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
-                    load = -params[0];
+                    load = params[0];
                 } else {
                     char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
-                    load = -ctx.bus_read(addr);
+                    load = ctx.bus_read(addr);
                 }
-                result = op1 + load;
+                result = op1 - load;
                 boolean z = (result & 0xFF) == 0;
-                boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                boolean c = -load > op1;
+                boolean h = -(load & 0xF) + (op1 & 0xF) < 0;
+                boolean c = ((char) load & 0xFF) > ((char) op1 & 0xFF);
                 ctx.cpu.setCFlag(c);
                 ctx.cpu.setHFlag(h);
                 ctx.cpu.setZFlag(z);
@@ -642,6 +675,8 @@ public enum Opcodes {
                 boolean z = false, n = false, h = false, c = false;
                 if (OperandType.isr8(operands[0])) {
                     op1 = ctx.cpu.getRegA() & 0xFF;
+                } else if (operands[0].getName() == OperandType.SIGNED_IMMEDIATE) {
+                    op1 = ((char) ctx.cpu.getRegFromOperandType(operands[0].getName()));
                 } else {
                     op1 = ((char) ctx.cpu.getRegFromOperandType(operands[0].getName()) & 0xFFFF);
                 }
@@ -669,15 +704,17 @@ public enum Opcodes {
                     ctx.cpu.setRegA((byte) (result & 0xFF));
                 } else {
                     if (operands[0].getName() == OperandType.DOUBLE_REGISTER_SP) {
+                        load = (byte) load;
+                        result = op1 + load;
                         h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                        c = result > 0xFF;
+                        c = (load & 0xFF) + (op1 & 0xFF) > 0xFF;
                         ctx.cpu.setCFlag(c);
                         ctx.cpu.setHFlag(h);
                         ctx.cpu.setZFlag(false);
                         ctx.cpu.setSFlag(false);
                         ctx.cpu.setRegSP((char) (result & 0xFFFF));
                     } else {
-                        h = (op1 & 0xFF) + (load & 0xFF) > 0xFF;
+                        h = (op1 & 0xFFF) + (load & 0xFFF) > 0xFFF;
                         c = result > 0xFFFF;
                         ctx.cpu.setCFlag(c);
                         ctx.cpu.setHFlag(h);
@@ -710,11 +747,11 @@ public enum Opcodes {
                 result = op1 + load;
                 boolean z = (result & 0xFF) == 0;
                 boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                boolean c = result > 0xFF;
+                boolean c = (byte) result > (byte) 0xFF;
                 ctx.cpu.setCFlag(c);
                 ctx.cpu.setHFlag(h);
                 ctx.cpu.setZFlag(z);
-                ctx.cpu.setSFlag(true);
+                ctx.cpu.setSFlag(false);
                 ctx.cpu.setRegA((byte) (result & 0xFF));
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
@@ -738,7 +775,7 @@ public enum Opcodes {
                 byte result = (byte) (ctx.cpu.getRegA() - load);
                 ctx.cpu.setSFlag(true);
                 ctx.cpu.setZFlag(result == 0);
-                ctx.cpu.setHFlag((ctx.cpu.getRegA() & 0xF) + (result & 0xF) > 0xF);
+                ctx.cpu.setHFlag(-(load & 0xF) + (ctx.cpu.getRegA() & 0xF) < 0);
                 ctx.cpu.setCFlag((char) (load & 0xFF) > (char) (ctx.cpu.getRegA() & 0xFF));
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
@@ -756,7 +793,7 @@ public enum Opcodes {
                     ctx.cpu.setFlagReg(result);
                 } else if (OperandType.isr16(operands[0])) {
                     if (operands[0].isImmediate()) {
-                        ctx.cpu.setRegFromOperandType(operands[0].getName(), ctx.cpu.getRegFromOperandType(operands[0].getName()));
+                        ctx.cpu.setRegFromOperandType(operands[0].getName(), (char) ((char) ctx.cpu.getRegFromOperandType(operands[0].getName()) - 1));
                     } else {
                         char addr = (char) ctx.cpu.getRegFromOperandType(operands[0].getName());
                         byte load = ctx.bus_read(addr);
@@ -880,6 +917,7 @@ public enum Opcodes {
         STOP.callBack = NOP_CB;
         HALT.callBack = HALT_CB;
         SRL.callBack = SRL_CB;
+        SWAP.callBack = SWAP_CB;
     }
 
     public Function<Emu, Boolean> callBack;
