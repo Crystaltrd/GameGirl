@@ -44,6 +44,7 @@ public enum Opcodes {
     SRL("SRL"),
     RR("RR"),
     RRA("RRA"),
+    SET("SET"),
     // ==============================
     RES("RES"),
     RRC("RRC"),
@@ -51,7 +52,6 @@ public enum Opcodes {
     SRA("SRA"),
     SWAP("SWAP"),
     BIT("BIT"),
-    SET("SET"),
     // ==============================
     DAA("DAA"),
     RRCA("RRCA"),
@@ -187,7 +187,6 @@ public enum Opcodes {
         // System.out.println("EXECUTING RET");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
-        byte[] params = ctx.cpu.getCurrParams();
         char nextPC = (char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes());
         if (operands.length == 0) {
             ctx.cpu.setRegPC(ctx.pop());
@@ -202,7 +201,6 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> RLA_CB = (ctx -> {
         // System.out.println("EXECUTING RLA");
-        Instruction instruction = ctx.cpu.getCurrInstruction();
         byte load = ctx.cpu.getRegA();
         boolean c = ctx.cpu.getFlagReg().isCarryFlag();
         ctx.cpu.setCFlag((load & 0b10000000) != 0);
@@ -218,7 +216,6 @@ public enum Opcodes {
 
     static final Function<Emu, Boolean> RRA_CB = (ctx -> {
         // System.out.println("EXECUTING RRA");
-        Instruction instruction = ctx.cpu.getCurrInstruction();
         byte load = ctx.cpu.getRegA();
         boolean c = ctx.cpu.getFlagReg().isCarryFlag();
         ctx.cpu.setCFlag((load & 0b00000001) != 0);
@@ -313,6 +310,27 @@ public enum Opcodes {
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
         return true;
     });
+    static final Function<Emu, Boolean> SET_CB = (ctx -> {
+        // System.out.println("EXECUTING SET");
+        Instruction instruction = ctx.cpu.getCurrInstruction();
+        InstructionOperands[] operands = instruction.getOperands();
+        byte load;
+        if (OperandType.isr8(operands[0])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            load = ctx.bus_read(addr);
+        }
+        load &= (byte) (0xFF & (1 << Integer.parseInt(operands[0].getName().getLabel())));
+        if (OperandType.isr8(operands[0])) {
+            ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            ctx.bus_write(addr, load);
+        }
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        return true;
+    });
     static final Function<Emu, Boolean> SRL_CB = (ctx -> {
         // System.out.println("EXECUTING SRL");
         Instruction instruction = ctx.cpu.getCurrInstruction();
@@ -366,8 +384,6 @@ public enum Opcodes {
         return true;
     });
     static final Function<Emu, Boolean> RLCA_CB = (ctx -> {
-        Instruction instruction = ctx.cpu.getCurrInstruction();
-        InstructionOperands[] operands = instruction.getOperands();
         byte load = ctx.cpu.getRegA();
         boolean bit7 = (load & 0b10000000) != 0;
         ctx.cpu.setCFlag(bit7);
@@ -382,7 +398,6 @@ public enum Opcodes {
     });
     static final Function<Emu, Boolean> RETI_CB = (ctx -> {
         // System.out.println("EXECUTING RETI");
-        Instruction instruction = ctx.cpu.getCurrInstruction();
         ctx.cpu.setRegPC(ctx.pop());
         ctx.cpu.setQueuedIME(true);
         return true;
@@ -398,7 +413,7 @@ public enum Opcodes {
                 ALUResult result = ALU.addByteToReg(nextPC, params[0], true);
                 ctx.cpu.setRegPC((char) result.result);
             }
-                break;
+            break;
             case FLAG_NOTCARRY:
             case FLAG_NOTZERO:
             case FLAG_CARRY:
@@ -613,7 +628,6 @@ public enum Opcodes {
         int load;
         int op1;
         int result;
-        boolean z = false, n = false, h = false, c = false;
         if (OperandType.isr8(operands[0])) {
             op1 = ctx.cpu.getRegA() & 0xFF;
         } else if (operands[0].getName() == OperandType.SIGNED_IMMEDIATE) {
@@ -635,30 +649,23 @@ public enum Opcodes {
         }
         result = op1 + load;
         if (OperandType.isr8(operands[0])) {
-            z = (result & 0xFF) == 0;
-            h = (load & 0xF) + (op1 & 0xF) > 0xF;
-            c = result > 0xFF;
-            ctx.cpu.setCFlag(c);
-            ctx.cpu.setHFlag(h);
-            ctx.cpu.setZFlag(z);
-            ctx.cpu.setSFlag(n);
+            ctx.cpu.setCFlag(result > 0xFF);
+            ctx.cpu.setHFlag((load & 0xF) + (op1 & 0xF) > 0xF);
+            ctx.cpu.setZFlag((result & 0xFF) == 0);
+            ctx.cpu.setSFlag(false);
             ctx.cpu.setRegA((byte) (result & 0xFF));
         } else {
             if (operands[0].getName() == OperandType.DOUBLE_REGISTER_SP) {
                 load = (byte) load;
                 result = op1 + load;
-                h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                c = (load & 0xFF) + (op1 & 0xFF) > 0xFF;
-                ctx.cpu.setCFlag(c);
-                ctx.cpu.setHFlag(h);
+                ctx.cpu.setCFlag((load & 0xFF) + (op1 & 0xFF) > 0xFF);
+                ctx.cpu.setHFlag((load & 0xF) + (op1 & 0xF) > 0xF);
                 ctx.cpu.setZFlag(false);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setRegSP((char) (result & 0xFFFF));
             } else {
-                h = (op1 & 0xFFF) + (load & 0xFFF) > 0xFFF;
-                c = result > 0xFFFF;
-                ctx.cpu.setCFlag(c);
-                ctx.cpu.setHFlag(h);
+                ctx.cpu.setCFlag(result > 0xFFFF);
+                ctx.cpu.setHFlag((op1 & 0xFFF) + (load & 0xFFF) > 0xFFF);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setRegHL((char) (result & 0xFFFF));
             }
@@ -847,17 +854,19 @@ public enum Opcodes {
         HALT.callBack = HALT_CB;
         SRL.callBack = SRL_CB;
         SWAP.callBack = SWAP_CB;
+        SET.callBack = SET_CB;
     }
+
     /*
      * CPU TESTS:
      * TODO: 01-special.gb: NOT PASSED(Instrs not implemented yet)
      * TODO: 02-interrupts.gb: NOT PASSED(Timer and interrupts not implemented)
      * 03-op sp,hl.gb : PASSED
      * 04-op r,imm.gb : PASSED
-     * TODO: 05-op rp.gb: NOT TESTED YET
-     * TODO: 06-ld r,r.gb: NOT TESTED YET
+     * 05-op rp.gb: PASSED
+     * 06-ld r,r.gb: PASSED
      * 07-jr,jp,call,ret,rst.gb: PASSED
-     * TODO: 08-misc instrs.gb: NOT TESTED YET
+     * 08-misc instrs.gb: PASSED
      * TODO: 09-op r,r.gb: NOT TESTED YET
      * TODO: 10-bit ops.gb: NOT TESTED YET
      * TODO: 11-op a,(hl).gb: NOT TESTED YET
