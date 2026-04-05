@@ -36,6 +36,12 @@ public enum Opcodes {
     RLA("RLA"),
     RLC("RLC"),
     RLCA("RLCA"),
+    SBC("SBC"),
+    ADC("ADC"),
+
+    STOP("STOP"), // WONT IMPLEMENT
+    HALT("HALT"),
+    SRL("SRL"),
     //  ==============================
     RES("RES"),
     RRC("RRC"),
@@ -43,17 +49,12 @@ public enum Opcodes {
     SLA("SLA"),
     SRA("SRA"),
     SWAP("SWAP"),
-    SRL("SRL"),
     BIT("BIT"),
     SET("SET"),
     //  ==============================
-    HALT("HALT"),
-    STOP("STOP"),
-    ADC("ADC"),
     DAA("DAA"),
     RRA("RRA"),
     RRCA("RRCA"),
-    SBC("SBC"),
     // =================================
     ILLEGAL_D3("ILLEGAL_D3"),
     ILLEGAL_DB("ILLEGAL_DB"),
@@ -86,6 +87,14 @@ public enum Opcodes {
             ctx -> {
 //                System.out.println("EXECUTING DI");
                 ctx.cpu.setIME(false);
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
+    static final Function<Emu, Boolean> HALT_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING HALT");
+                ctx.cpu.setHalted(true);
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
             }
@@ -263,6 +272,34 @@ public enum Opcodes {
                 return true;
             }
     );
+    static final Function<Emu, Boolean> SRL_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING SRL");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte load;
+                if (OperandType.isr8(operands[0])) {
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+                } else {
+                    char addr = ctx.cpu.getRegHL();
+                    load = ctx.bus_read(addr);
+                }
+                ctx.cpu.setCFlag((load & 0b00000001) != 0);
+                load = (byte) ((byte) (load >> 1) & 0b01111111);
+                ctx.cpu.setZFlag(load == 0);
+                ctx.cpu.setSFlag(false);
+                ctx.cpu.setHFlag(false);
+                if (OperandType.isr8(operands[0])) {
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(),load);
+                } else {
+                    char addr = ctx.cpu.getRegHL();
+                    ctx.bus_write(addr,load);
+                }
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+                return true;
+            }
+    );
+
     static final Function<Emu, Boolean> RLC_CB = (
             ctx -> {
                 Instruction instruction = ctx.cpu.getCurrInstruction();
@@ -508,6 +545,38 @@ public enum Opcodes {
                 return true;
             }
     );
+
+    static final Function<Emu, Boolean> SBC_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING SBC");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                int load;
+                int op1 = ctx.cpu.getRegA();
+                int result;
+                if (OperandType.isr8(operands[1])) {
+                    load = -(byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                    load = -params[0];
+                } else {
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                    load = -ctx.bus_read(addr);
+                }
+                load = load - (ctx.cpu.getFlagReg().isCarryFlag() ? 1 : 0);
+                result = op1 + load;
+                boolean z = (result & 0xFF) == 0;
+                boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
+                boolean c = result > 0xFF;
+                ctx.cpu.setCFlag(c);
+                ctx.cpu.setHFlag(h);
+                ctx.cpu.setZFlag(z);
+                ctx.cpu.setSFlag(true);
+                ctx.cpu.setRegA((byte) (result & 0xFF));
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
     static final Function<Emu, Boolean> ADD_CB = (
             ctx -> {
 //                System.out.println("EXECUTING ADD");
@@ -563,6 +632,37 @@ public enum Opcodes {
                         ctx.cpu.setRegHL((char) (result & 0xFFFF));
                     }
                 }
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                return true;
+            }
+    );
+    static final Function<Emu, Boolean> ADC_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING ADC");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte[] params = ctx.cpu.getCurrParams();
+                int load;
+                int op1 = ctx.cpu.getRegA();
+                int result;
+                if (OperandType.isr8(operands[1])) {
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                } else if (operands[1].getName() == OperandType.IMMEDIATE_WORD) {
+                    load = params[0];
+                } else {
+                    char addr = (char) ctx.cpu.getRegFromOperandType(operands[1].getName());
+                    load = ctx.bus_read(addr);
+                }
+                load = load + (ctx.cpu.getFlagReg().isCarryFlag() ? 1 : 0);
+                result = op1 + load;
+                boolean z = (result & 0xFF) == 0;
+                boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
+                boolean c = result > 0xFF;
+                ctx.cpu.setCFlag(c);
+                ctx.cpu.setHFlag(h);
+                ctx.cpu.setZFlag(z);
+                ctx.cpu.setSFlag(true);
+                ctx.cpu.setRegA((byte) (result & 0xFF));
                 ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
                 return true;
             }
@@ -705,6 +805,7 @@ public enum Opcodes {
         DEC.callBack = DEC_CB;
         INC.callBack = INC_CB;
         ADD.callBack = ADD_CB;
+        ADC.callBack = ADC_CB;
         SCF.callBack = SCF_CB;
         CCF.callBack = CCF_CB;
         POP.callBack = POP_CB;
@@ -716,10 +817,14 @@ public enum Opcodes {
         RETI.callBack = RETI_CB;
         RST.callBack = RST_CB;
         SUB.callBack = SUB_CB;
+        SBC.callBack = SBC_CB;
         RL.callBack = RL_CB;
         RLA.callBack = RLA_CB;
         RLC.callBack = RLC_CB;
         RLCA.callBack = RLCA_CB;
+        STOP.callBack = NOP_CB;
+        HALT.callBack = HALT_CB;
+        SRL.callBack = SRL_CB;
     }
 
     public Function<Emu, Boolean> callBack;
