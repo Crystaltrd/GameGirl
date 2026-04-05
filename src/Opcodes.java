@@ -275,9 +275,10 @@ public enum Opcodes {
                     char addr = ctx.cpu.getRegHL();
                     load = ctx.bus_read(addr);
                 }
-                boolean c = ctx.cpu.getFlagReg().isCarryFlag();
-                ctx.cpu.setCFlag((load & 0b10000000) != 0);
+                boolean bit7 =  (load & 0b10000000) != 0;
+                ctx.cpu.setCFlag(bit7);
                 load = (byte) (load << 1);
+                load = (byte) (load |(bit7 ? 1 : 0))
                 ctx.cpu.setZFlag(load == 0);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
