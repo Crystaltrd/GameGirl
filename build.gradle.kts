@@ -14,6 +14,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations:2.21")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.0-M1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:6.1.0-M1")
 }
 
 group = "org.gamegirl.emu"
@@ -23,4 +24,8 @@ java.sourceCompatibility = JavaVersion.VERSION_21
 
 application {
     mainClass = "Main"
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
