@@ -42,10 +42,11 @@ public enum Opcodes {
     STOP("STOP"), // WONT IMPLEMENT
     HALT("HALT"),
     SRL("SRL"),
+    RR("RR"),
+    RRA("RRA"),
     //  ==============================
     RES("RES"),
     RRC("RRC"),
-    RR("RR"),
     SLA("SLA"),
     SRA("SRA"),
     SWAP("SWAP"),
@@ -53,7 +54,6 @@ public enum Opcodes {
     SET("SET"),
     //  ==============================
     DAA("DAA"),
-    RRA("RRA"),
     RRCA("RRCA"),
     // =================================
     ILLEGAL_D3("ILLEGAL_D3"),
@@ -164,7 +164,11 @@ public enum Opcodes {
                 byte[] params = ctx.cpu.getCurrParams();
                 switch (operands[0].getName()) {
                     case DOUBLE_REGISTER_HL -> ctx.cpu.setRegPC(ctx.cpu.getRegHL());
-                    case ADDRESS_DOUBLEWORD -> ctx.cpu.setRegPC(CPU.get16bit(params));
+                    case ADDRESS_DOUBLEWORD -> {
+                        if(CPU.get16bit(params) == 0xC000)
+                            ctx.debug = false;
+                        ctx.cpu.setRegPC(CPU.get16bit(params));
+                    }
                     default -> {
                         if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
                             ctx.cpu.setRegPC(CPU.get16bit(params));
@@ -183,12 +187,14 @@ public enum Opcodes {
                 InstructionOperands[] operands = instruction.getOperands();
                 byte[] params = ctx.cpu.getCurrParams();
                 char nextPC = (char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes());
-                ctx.push(nextPC);
                 if (Objects.requireNonNull(operands[0].getName()) == OperandType.ADDRESS_DOUBLEWORD) {
+                    ctx.push(nextPC);
                     ctx.cpu.setRegPC(CPU.get16bit(params));
                 } else {
-                    if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
+                    if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
+                        ctx.push(nextPC);
                         ctx.cpu.setRegPC(CPU.get16bit(params));
+                    }
                     else
                         ctx.cpu.setRegPC(nextPC);
                 }
@@ -243,6 +249,24 @@ public enum Opcodes {
                 return true;
             }
     );
+
+    static final Function<Emu, Boolean> RRA_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING RRA");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                byte load = ctx.cpu.getRegA();
+                boolean c = ctx.cpu.getFlagReg().isCarryFlag();
+                ctx.cpu.setCFlag((load & 0b00000001) != 0);
+                load = (byte) (load >> 1);
+                load = (byte) (load | (c ? 0b10000000 : 0));
+                ctx.cpu.setZFlag(load == 0);
+                ctx.cpu.setSFlag(false);
+                ctx.cpu.setHFlag(false);
+                ctx.cpu.setRegA(load);
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+                return true;
+            }
+    );
     static final Function<Emu, Boolean> RL_CB = (
             ctx -> {
 //                System.out.println("EXECUTING RL");
@@ -259,6 +283,35 @@ public enum Opcodes {
                 ctx.cpu.setCFlag((load & 0b10000000) != 0);
                 load = (byte) (load << 1);
                 load = (byte) (load | (c ? 1 : 0));
+                ctx.cpu.setZFlag(load == 0);
+                ctx.cpu.setSFlag(false);
+                ctx.cpu.setHFlag(false);
+                if (OperandType.isr8(operands[0])) {
+                    ctx.cpu.setRegFromOperandType(operands[0].getName(),load);
+                } else {
+                    char addr = ctx.cpu.getRegHL();
+                    ctx.bus_write(addr,load);
+                }
+                ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+                return true;
+            }
+    );
+    static final Function<Emu, Boolean> RR_CB = (
+            ctx -> {
+//                System.out.println("EXECUTING RR");
+                Instruction instruction = ctx.cpu.getCurrInstruction();
+                InstructionOperands[] operands = instruction.getOperands();
+                byte load;
+                if (OperandType.isr8(operands[0])) {
+                    load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+                } else {
+                    char addr = ctx.cpu.getRegHL();
+                    load = ctx.bus_read(addr);
+                }
+                boolean c = ctx.cpu.getFlagReg().isCarryFlag();
+                ctx.cpu.setCFlag((load & 0b00000001) != 0);
+                load = (byte) (load >> 1);
+                load = (byte) (load | (c ? 0b10000000 : 0));
                 ctx.cpu.setZFlag(load == 0);
                 ctx.cpu.setSFlag(false);
                 ctx.cpu.setHFlag(false);
@@ -535,7 +588,7 @@ public enum Opcodes {
                 result = op1 + load;
                 boolean z = (result & 0xFF) == 0;
                 boolean h = (load & 0xF) + (op1 & 0xF) > 0xF;
-                boolean c = result > 0xFF;
+                boolean c = -load > op1;
                 ctx.cpu.setCFlag(c);
                 ctx.cpu.setHFlag(h);
                 ctx.cpu.setZFlag(z);
@@ -819,7 +872,9 @@ public enum Opcodes {
         SUB.callBack = SUB_CB;
         SBC.callBack = SBC_CB;
         RL.callBack = RL_CB;
+        RR.callBack = RR_CB;
         RLA.callBack = RLA_CB;
+        RRA.callBack = RRA_CB;
         RLC.callBack = RLC_CB;
         RLCA.callBack = RLCA_CB;
         STOP.callBack = NOP_CB;

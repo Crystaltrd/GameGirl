@@ -7,13 +7,13 @@ import java.util.HexFormat;
 @Getter
 public class CPU {
     private byte RegA = 1;
-    private FlagRegister FlagReg = new FlagRegister((byte) 0);
-    private byte RegB;
-    private byte RegC;
-    private byte RegD;
-    private byte RegE;
-    private byte RegH;
-    private byte RegL;
+    private FlagRegister FlagReg = new FlagRegister((byte) 0xB0);
+    private byte RegB = (byte) 0x00;
+    private byte RegC = 0x13;
+    private byte RegD = 0x00;
+    private byte RegE = (byte) 0xD8;
+    private byte RegH = (byte) 0x01;
+    private byte RegL = 0x4D;
     private char RegSP = 0xFFFE;
     private char RegPC = 0x0100;
 
