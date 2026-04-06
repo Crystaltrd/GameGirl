@@ -38,7 +38,6 @@ public enum Opcodes {
     RLCA("RLCA"),
     SBC("SBC"),
     ADC("ADC"),
-
     STOP("STOP"), // WONT IMPLEMENT
     HALT("HALT"),
     SRL("SRL"),
@@ -48,10 +47,10 @@ public enum Opcodes {
     RRC("RRC"),
     RRCA("RRCA"),
     RES("RES"),
+    SWAP("SWAP"),
     // ==============================
     SLA("SLA"),
     SRA("SRA"),
-    SWAP("SWAP"),
     BIT("BIT"),
     // ==============================
     DAA("DAA"),
