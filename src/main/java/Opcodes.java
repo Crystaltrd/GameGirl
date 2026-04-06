@@ -45,16 +45,16 @@ public enum Opcodes {
     RR("RR"),
     RRA("RRA"),
     SET("SET"),
+    RRC("RRC"),
+    RRCA("RRCA"),
     // ==============================
     RES("RES"),
-    RRC("RRC"),
     SLA("SLA"),
     SRA("SRA"),
     SWAP("SWAP"),
     BIT("BIT"),
     // ==============================
     DAA("DAA"),
-    RRCA("RRCA"),
     // =================================
     ILLEGAL_D3("ILLEGAL_D3"),
     ILLEGAL_DB("ILLEGAL_DB"),
@@ -383,12 +383,53 @@ public enum Opcodes {
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
         return true;
     });
+
+    static final Function<Emu, Boolean> RRC_CB = (ctx -> {
+        Instruction instruction = ctx.cpu.getCurrInstruction();
+        InstructionOperands[] operands = instruction.getOperands();
+        byte load;
+        if (OperandType.isr8(operands[0])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            load = ctx.bus_read(addr);
+        }
+        boolean bit0 = (load & 0b00000001) != 0;
+        ctx.cpu.setCFlag(bit0);
+        load = (byte) (load >> 1);
+        load = (byte) (load | (bit0 ? 0b10000000 : 0));
+        ctx.cpu.setZFlag(load == 0);
+        ctx.cpu.setSFlag(false);
+        ctx.cpu.setHFlag(false);
+        if (OperandType.isr8(operands[0])) {
+            ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            ctx.bus_write(addr, load);
+        }
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        return true;
+    });
     static final Function<Emu, Boolean> RLCA_CB = (ctx -> {
         byte load = ctx.cpu.getRegA();
         boolean bit7 = (load & 0b10000000) != 0;
         ctx.cpu.setCFlag(bit7);
         load = (byte) (load << 1);
         load = (byte) (load | (bit7 ? 1 : 0));
+        ctx.cpu.setZFlag(false);
+        ctx.cpu.setSFlag(false);
+        ctx.cpu.setHFlag(false);
+        ctx.cpu.setRegA(load);
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        return true;
+    });
+
+    static final Function<Emu, Boolean> RRCA_CB = (ctx -> {
+        byte load = ctx.cpu.getRegA();
+        boolean bit0 = (load & 0b00000001) != 0;
+        ctx.cpu.setCFlag(bit0);
+        load = (byte) (load >> 1);
+        load = (byte) (load | (bit0 ? 0b10000000 : 0));
         ctx.cpu.setZFlag(false);
         ctx.cpu.setSFlag(false);
         ctx.cpu.setHFlag(false);
