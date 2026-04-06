@@ -24,7 +24,7 @@ public class Emu {
     public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
     public byte IEReg = 0x00;
     public boolean gameboyDoctor;
-    public boolean silent; 
+    public boolean silent;
 
     public byte bus_read(char addr) {
         if (addr < 0x8000)
@@ -67,6 +67,10 @@ public class Emu {
     }
 
     public void bus_write(char addr, byte val) {
+        if (addr == 0xDEF6 && val == 0x40) {
+            addr = addr;
+        }
+            
         if (addr < 0x8000)
             cartridge.write(addr, val);
         else if (addr < 0xA000)

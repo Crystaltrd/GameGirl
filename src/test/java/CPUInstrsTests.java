@@ -96,7 +96,7 @@ public class CPUInstrsTests {
     @Test
     @Order(10)
     public void t11_op_a_hl() throws IOException {
-        cpuInstrsTest("ROMs/11-op a,(hl).gb", 11);
+        cpuInstrsTest("11-op a,(hl).gb", 11);
     }
 }
 
