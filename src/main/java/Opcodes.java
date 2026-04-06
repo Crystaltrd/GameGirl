@@ -48,11 +48,9 @@ public enum Opcodes {
     RRCA("RRCA"),
     RES("RES"),
     SWAP("SWAP"),
-    // ==============================
     SLA("SLA"),
     SRA("SRA"),
     BIT("BIT"),
-    // ==============================
     DAA("DAA"),
     // =================================
     ILLEGAL_D3("ILLEGAL_D3"),
@@ -71,6 +69,7 @@ public enum Opcodes {
 
     public final String label;
     static final Function<Emu, Boolean> NONE_CB = (ctx -> {
+        System.out.println(ctx.cpu.getCurrInstruction().getMnemonic().label);
         System.out.println("NOT IMPLEMENTED YET");
         return false;
     });
@@ -106,6 +105,38 @@ public enum Opcodes {
         return true;
     });
 
+    static final Function<Emu, Boolean> DAA_CB = (ctx -> {
+        // System.out.println("EXECUTING DAA");
+        byte load = ctx.cpu.getRegA();
+        boolean c = ctx.cpu.getFlagReg().isCarryFlag();
+        boolean n = ctx.cpu.getFlagReg().isSubstractFlag();
+        boolean h = ctx.cpu.getFlagReg().isHalfCarryFlag();
+        if (n) {
+            byte adj = 0;
+            if (h)
+                adj += 0x6;
+            if (c)
+                adj += 0x60;
+            load -= adj;
+
+        } else {
+            // load=0x91
+            byte adj = 0;
+            if (h || (load & 0xF) > 0x9)
+                adj += 0x6;
+            // adj = 0x6;
+            if (c || (load & 0xFF) > 0x99) {
+                adj += 0x60;
+                ctx.cpu.setCFlag(true);
+            }
+            load += adj;
+        }
+        ctx.cpu.setZFlag(load == 0);
+        ctx.cpu.setHFlag(false);
+        ctx.cpu.setRegA(load);
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        return true;
+    });
     static final Function<Emu, Boolean> PUSH_CB = (ctx -> {
         // System.out.println("EXECUTING PUSH");
         Instruction instruction = ctx.cpu.getCurrInstruction();
@@ -260,6 +291,57 @@ public enum Opcodes {
         return true;
     });
 
+    static final Function<Emu, Boolean> SLA_CB = (ctx -> {
+        // System.out.println("EXECUTING SLA");
+        Instruction instruction = ctx.cpu.getCurrInstruction();
+        InstructionOperands[] operands = instruction.getOperands();
+        byte load;
+        if (OperandType.isr8(operands[0])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            load = ctx.bus_read(addr);
+        }
+        ctx.cpu.setCFlag((load & 0b10000000) != 0);
+        load = (byte) ((load << 1) & 0xFE);
+        ctx.cpu.setZFlag(load == 0);
+        ctx.cpu.setSFlag(false);
+        ctx.cpu.setHFlag(false);
+        if (OperandType.isr8(operands[0])) {
+            ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            ctx.bus_write(addr, load);
+        }
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        return true;
+    });
+
+    static final Function<Emu, Boolean> SRA_CB = (ctx -> {
+        // System.out.println("EXECUTING SRA");
+        Instruction instruction = ctx.cpu.getCurrInstruction();
+        InstructionOperands[] operands = instruction.getOperands();
+        byte load;
+        if (OperandType.isr8(operands[0])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            load = ctx.bus_read(addr);
+        }
+        ctx.cpu.setCFlag((load & 0b00000001) != 0);
+        load = (byte) ((load >> 1) & 0xFF);
+        ctx.cpu.setZFlag(load == 0);
+        ctx.cpu.setSFlag(false);
+        ctx.cpu.setHFlag(false);
+        if (OperandType.isr8(operands[0])) {
+            ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            ctx.bus_write(addr, load);
+        }
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        return true;
+    });
     static final Function<Emu, Boolean> SWAP_CB = (ctx -> {
         // System.out.println("EXECUTING SWAP");
         Instruction instruction = ctx.cpu.getCurrInstruction();
@@ -318,19 +400,36 @@ public enum Opcodes {
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
         byte load;
-        if (OperandType.isr8(operands[0])) {
-            load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+        if (OperandType.isr8(operands[1])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
         } else {
             char addr = ctx.cpu.getRegHL();
             load = ctx.bus_read(addr);
         }
-        load &= (byte) (0xFF & (1 << Integer.parseInt(operands[0].getName().getLabel())));
-        if (OperandType.isr8(operands[0])) {
-            ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+        load |= (byte) (0xFF & (1 << Integer.parseInt(operands[0].getName().getLabel())));
+        if (OperandType.isr8(operands[1])) {
+            ctx.cpu.setRegFromOperandType(operands[1].getName(), load);
         } else {
             char addr = ctx.cpu.getRegHL();
             ctx.bus_write(addr, load);
         }
+        ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        return true;
+    });
+    static final Function<Emu, Boolean> BIT_CB = (ctx -> {
+        // System.out.println("EXECUTING BIT");
+        Instruction instruction = ctx.cpu.getCurrInstruction();
+        InstructionOperands[] operands = instruction.getOperands();
+        byte load;
+        if (OperandType.isr8(operands[1])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
+        } else {
+            char addr = ctx.cpu.getRegHL();
+            load = ctx.bus_read(addr);
+        }
+        ctx.cpu.setZFlag(((load >> Integer.parseInt(operands[0].getName().getLabel())) & 0x01) == 0);
+        ctx.cpu.setSFlag(false);
+        ctx.cpu.setHFlag(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
         return true;
     });
@@ -340,15 +439,15 @@ public enum Opcodes {
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
         byte load;
-        if (OperandType.isr8(operands[0])) {
-            load = (byte) ctx.cpu.getRegFromOperandType(operands[0].getName());
+        if (OperandType.isr8(operands[1])) {
+            load = (byte) ctx.cpu.getRegFromOperandType(operands[1].getName());
         } else {
             char addr = ctx.cpu.getRegHL();
             load = ctx.bus_read(addr);
         }
         load &= (byte) (0xFF & ~(1 << Integer.parseInt(operands[0].getName().getLabel())));
-        if (OperandType.isr8(operands[0])) {
-            ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
+        if (OperandType.isr8(operands[1])) {
+            ctx.cpu.setRegFromOperandType(operands[1].getName(), load);
         } else {
             char addr = ctx.cpu.getRegHL();
             ctx.bus_write(addr, load);
@@ -932,6 +1031,10 @@ public enum Opcodes {
         RES.callBack = RES_CB;
         RRC.callBack = RRC_CB;
         RRCA.callBack = RRCA_CB;
+        SLA.callBack = SLA_CB;
+        SRA.callBack = SRA_CB;
+        BIT.callBack = BIT_CB;
+        DAA.callBack = DAA_CB;
     }
 
     /*
