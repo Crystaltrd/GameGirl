@@ -1,6 +1,3 @@
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-
 public class ALUResult {
     public FlagOperation Carry = FlagOperation.UNCHANGED;
     public FlagOperation HalfCarry = FlagOperation.UNCHANGED;

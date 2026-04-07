@@ -72,21 +72,21 @@ public class CPU {
         return get16bit(new byte[]{RegL, RegH});
     }
     public void setRegHL(char val){
-        RegH = getHigh((char) val);
-        RegL = getLow((char) val);
+        RegH = getHigh(val);
+        RegL = getLow(val);
     }
     public void setRegAF(char val){
-        RegA = getHigh((char) val);
-        FlagReg.setByte(getLow((char) val));
+        RegA = getHigh(val);
+        FlagReg.setByte(getLow(val));
     }
     public void setRegBC(char val){
-        RegB = getHigh((char) val);
-        RegC = getLow((char) val);
+        RegB = getHigh(val);
+        RegC = getLow(val);
     }
 
     public void setRegDE(char val){
-        RegD = getHigh((char) val);
-        RegE = getLow((char) val);
+        RegD = getHigh(val);
+        RegE = getLow(val);
     }
 
  

@@ -1,6 +1,4 @@
-
-
-import java.io.*;
+import java.io.InputStream;
 import java.util.Scanner;
 
 // 0x0000 -> 0x3FFF: ROM Bank 0
