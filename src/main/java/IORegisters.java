@@ -2,10 +2,11 @@ public class IORegisters extends GBMemory {
     public byte[] data = new byte[0xFF7F - 0xFF00 + 1];
     public InterruptFlag IFReg = new InterruptFlag((byte) 0xE1);
     private Emu emulator;
-    public Timer timer = new Timer(emulator);
+    public Timer timer;
 
     IORegisters(Emu emulator) {
         this.emulator = emulator;
+        this.timer = new Timer(emulator);
     }
 
     public byte read(char addr) {

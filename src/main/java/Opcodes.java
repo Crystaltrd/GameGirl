@@ -197,6 +197,7 @@ public enum Opcodes {
             }
             default -> {
                 if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
+
                     ctx.cpu.setRegPC(CPU.get16bit(params));
                     ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                 } else {

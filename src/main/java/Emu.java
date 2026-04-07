@@ -114,13 +114,7 @@ public class Emu {
         return instruction.getMnemonic().callBack.apply(this);
     }
 
-    public void tick(int cycles) {
-        for (int i = 0; i < cycles; i++) {
-            for (int j = 0; j < 4; j++) {
-                ticks++;
-            }
-        }
-    }
+    public boolean GBDoctorskipInstr = false;
 
     public StringBuilder dbg_msg = new StringBuilder();
 
@@ -131,7 +125,6 @@ public class Emu {
                 cpu.setRegPC((char) (cpu.getRegPC() + 1));
                 cpu.setCurrInstruction(fetchInstr(true));
             }
-
             tick(1);
             cpu.setCurrParams(fetchParams(cpu.getCurrInstruction()));
             if (!silent)
@@ -184,9 +177,18 @@ public class Emu {
         }
     }
 
+    public void tick(int cycles) {
+        for (int i = 0; i < cycles; i++) {
+            for (int j = 0; j < 4; j++) {
+                ticks++;
+                ioRegisters.timer.tick();
+            }
+        }
+    }
+
     public boolean emuStep() {
         if (!silent)
-            if (gameboyDoctor) {
+            if (gameboyDoctor && !GBDoctorskipInstr) {
                 System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
                         cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) (cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
             }
@@ -198,31 +200,46 @@ public class Emu {
                     cpu.setIME(false);
                     push(cpu.getRegPC());
                     cpu.setRegPC((char) 0x40);
+                    tick(5);
                 } else if (ioRegisters.IFReg.isLCDEnable() && IEReg.isLCDEnable()) {
                     ioRegisters.IFReg.setLCDEnable(false);
                     cpu.setIME(false);
                     push(cpu.getRegPC());
                     cpu.setRegPC((char) 0x48);
+                    tick(5);
                 } else if (ioRegisters.IFReg.isTimerEnable() && IEReg.isTimerEnable()) {
                     ioRegisters.IFReg.setTimerEnable(false);
                     cpu.setIME(false);
                     push(cpu.getRegPC());
                     cpu.setRegPC((char) 0x50);
+                    tick(5);
                 } else if (ioRegisters.IFReg.isSerialEnable() && IEReg.isSerialEnable()) {
                     cpu.setIME(false);
                     ioRegisters.IFReg.setSerialEnable(false);
                     push(cpu.getRegPC());
                     cpu.setRegPC((char) 0x58);
+                    tick(5);
                 } else if (ioRegisters.IFReg.isJoyPadEnable() && IEReg.isJoyPadEnable()) {
                     ioRegisters.IFReg.setJoyPadEnable(false);
                     cpu.setIME(false);
                     push(cpu.getRegPC());
                     cpu.setRegPC((char) 0x60);
+                    tick(5);
                 }
             }
             cpu.setQueuedIME(false);
         }
-        return cpu.isHalted() || step();
+        if (cpu.isHalted()) {
+            tick(1);
+            GBDoctorskipInstr = true;
+            if (ioRegisters.IFReg.getByte() != 0) {
+                cpu.setHalted(false);
+                GBDoctorskipInstr = false;
+                return step();
+            } else
+                return true;
+        } else
+            return step();
     }
 
     Emu(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
