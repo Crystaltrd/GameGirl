@@ -147,37 +147,7 @@ public class Emu {
                             (short) cpu.getRegSP());
                 }
             boolean ret = execute();
-            if (cpu.isIME()) {
-                if ((IEReg.getByte() & ioRegisters.IFReg.getByte()) != 0) {
-                    if (ioRegisters.IFReg.isVBlankEnable() && IEReg.isVBlankEnable()) {
-                        IEReg.setVBlankEnable(false);
-                        cpu.setIME(false);
-                        push(cpu.getRegPC());
-                        cpu.setRegPC((char) 0x40);
-                    } else if (ioRegisters.IFReg.isLCDEnable() && IEReg.isLCDEnable()) {
-                        IEReg.setLCDEnable(false);
-                        cpu.setIME(false);
-                        push(cpu.getRegPC());
-                        cpu.setRegPC((char) 0x48);
-                    } else if (ioRegisters.IFReg.isTimerEnable() && IEReg.isTimerEnable()) {
-                        IEReg.setTimerEnable(false);
-                        cpu.setIME(false);
-                        push(cpu.getRegPC());
-                        cpu.setRegPC((char) 0x50);
-                    } else if (ioRegisters.IFReg.isSerialEnable() && IEReg.isSerialEnable()) {
-                        cpu.setIME(false);
-                        IEReg.setSerialEnable(false);
-                        push(cpu.getRegPC());
-                        cpu.setRegPC((char) 0x58);
-                    } else if (ioRegisters.IFReg.isJoyPadEnable() && IEReg.isJoyPadEnable()) {
-                        IEReg.setJoyPadEnable(false);
-                        cpu.setIME(false);
-                        push(cpu.getRegPC());
-                        cpu.setRegPC((char) 0x60);
-                    }
-                }
-                cpu.setQueuedIME(false);
-            }
+
             if (cpu.isQueuedIME()) {
                 cpu.setIME(true);
             }
@@ -202,25 +172,56 @@ public class Emu {
 
     public void requestInterupt(InterruptSource src) {
         if (src == InterruptSource.IT_VBLANK) {
-            ioRegisters.IFReg.setVBlankEnable(false);
+            ioRegisters.IFReg.setVBlankEnable(true);
         } else if (src == InterruptSource.IT_LCD_STAT) {
-            ioRegisters.IFReg.setLCDEnable(false);
+            ioRegisters.IFReg.setLCDEnable(true);
         } else if (src == InterruptSource.IT_TIMER) {
-            ioRegisters.IFReg.setTimerEnable(false);
+            ioRegisters.IFReg.setTimerEnable(true);
         } else if (src == InterruptSource.IT_SERIAL) {
-            ioRegisters.IFReg.setSerialEnable(false);
+            ioRegisters.IFReg.setSerialEnable(true);
         } else if (src == InterruptSource.IT_JOYPAD) {
-            ioRegisters.IFReg.setJoyPadEnable(false);
+            ioRegisters.IFReg.setJoyPadEnable(true);
         }
     }
 
     public boolean emuStep() {
-
         if (!silent)
             if (gameboyDoctor) {
                 System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
                         cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) (cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
             }
+
+        if (cpu.isIME()) {
+            if ((IEReg.getByte() & ioRegisters.IFReg.getByte()) != 0) {
+                if (ioRegisters.IFReg.isVBlankEnable() && IEReg.isVBlankEnable()) {
+                    ioRegisters.IFReg.setVBlankEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x40);
+                } else if (ioRegisters.IFReg.isLCDEnable() && IEReg.isLCDEnable()) {
+                    ioRegisters.IFReg.setLCDEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x48);
+                } else if (ioRegisters.IFReg.isTimerEnable() && IEReg.isTimerEnable()) {
+                    ioRegisters.IFReg.setTimerEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x50);
+                } else if (ioRegisters.IFReg.isSerialEnable() && IEReg.isSerialEnable()) {
+                    cpu.setIME(false);
+                    ioRegisters.IFReg.setSerialEnable(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x58);
+                } else if (ioRegisters.IFReg.isJoyPadEnable() && IEReg.isJoyPadEnable()) {
+                    ioRegisters.IFReg.setJoyPadEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x60);
+                }
+            }
+            cpu.setQueuedIME(false);
+        }
         return cpu.isHalted() || step();
     }
 
