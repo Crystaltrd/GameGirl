@@ -1,11 +1,13 @@
+package Model;
+
 public enum HardwareRegisters {
     P1JOYP((byte) 0x00),//Joypad		
     SB((byte) 0x01),//Serial transfer data		
     SC((byte) 0x02),//Serial transfer control		
     DIV((byte) 0x04),//Divider register		
-    TIMA((byte) 0x05),//Timer counter		
-    TMA((byte) 0x06),//Timer modulo		
-    TAC((byte) 0x07),//Timer control		
+    TIMA((byte) 0x05),//Model.Timer counter		
+    TMA((byte) 0x06),//Model.Timer modulo		
+    TAC((byte) 0x07),//Model.Timer control		
     IF((byte) 0x0F),//Interrupt flag		
     NR10((byte) 0x10),//Sound channel 1 sweep		
     NR11((byte) 0x11),//Sound channel 1 length timer & duty cycle		

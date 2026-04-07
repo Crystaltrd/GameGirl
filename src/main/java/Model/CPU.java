@@ -1,3 +1,5 @@
+package Model;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -205,7 +207,7 @@ public class CPU {
     }
     public String toString() {
         HexFormat hex = HexFormat.of();
-        return "CPU{" +
+        return "Model.CPU{" +
                 "A=" + hex.toHexDigits(RegA) +
                 ",F=" + FlagReg.toString() + Integer.toBinaryString(FlagReg.getByte() & 0xFF) +
                 ",B=" + hex.toHexDigits(RegB) +

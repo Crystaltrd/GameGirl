@@ -1,3 +1,8 @@
+package Model;
+
+import lombok.Getter;
+
+@Getter
 public class Timer extends GBMemory {
     private final EmulationContext ctx;
     private long div = 0xAC00;

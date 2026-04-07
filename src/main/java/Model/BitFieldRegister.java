@@ -1,3 +1,5 @@
+package Model;
+
 public abstract class BitFieldRegister {
     abstract public byte getByte();
 

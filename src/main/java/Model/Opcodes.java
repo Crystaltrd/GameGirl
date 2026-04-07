@@ -1,3 +1,5 @@
+package Model;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.EnumSet;

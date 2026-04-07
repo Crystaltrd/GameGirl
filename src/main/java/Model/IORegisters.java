@@ -1,3 +1,5 @@
+package Model;
+
 public class IORegisters extends GBMemory {
     public byte[] data = new byte[0xFF7F - 0xFF00 + 1];
     public InterruptFlag IFReg = new InterruptFlag((byte) 0xE1);

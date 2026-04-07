@@ -1,3 +1,5 @@
+package Model;
+
 public enum InterruptSource {
     IT_VBLANK(1),
     IT_LCD_STAT(2),

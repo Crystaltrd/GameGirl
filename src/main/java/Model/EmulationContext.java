@@ -1,3 +1,5 @@
+package Model;
+
 import java.io.InputStream;
 import java.util.Scanner;
 
@@ -240,7 +242,7 @@ public class EmulationContext {
             return step();
     }
 
-    EmulationContext(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
+    public EmulationContext(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
         try {
             cartridge = new Cartridge(ROMFile);
             var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");
@@ -252,7 +254,7 @@ public class EmulationContext {
             bus_write((char) 0xFF44, (byte) 0x90);
             if (!silent) {
                 if (!gameboyDoctor) {
-                    System.out.println(cartridge.header.humanReadable());
+                    System.out.println(cartridge.getHeader().humanReadable());
                     if (interactive) {
                         Scanner scanner = new Scanner(System.in);
                         scanner.nextLine();

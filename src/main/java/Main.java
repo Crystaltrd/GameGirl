@@ -1,3 +1,6 @@
+import Model.EmulationContext;
+import Vue.EmulatorView;
+
 import java.util.Scanner;
 
 public class Main {
@@ -7,12 +10,11 @@ public class Main {
             if (args.length > 0) {
                 emulator = new EmulationContext(Main.class.getResourceAsStream(args[0]), false, true, false);
             } else {
-                emulator = new EmulationContext(Main.class.getResourceAsStream("/ROMs/inter.gb"), false, true, false);
+                emulator = new EmulationContext(Main.class.getResourceAsStream("/ROMs/test.gb"), false, false, false);
             }
-            Scanner scanner = new Scanner(System.in);
+            EmulatorView emulatorView = new EmulatorView(emulator);
             while (emulator.emuStep()) {
-                emulator.dbg_update();
-                emulator.dbg_print();
+                emulatorView.update();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

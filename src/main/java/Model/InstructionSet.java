@@ -1,3 +1,5 @@
+package Model;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;

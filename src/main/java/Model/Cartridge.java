@@ -1,3 +1,8 @@
+package Model;
+
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +24,7 @@ class CartridgeHeader {
     public byte header_checksum_raw;
     public boolean checksum_passed;
     public byte[] global_checksum_raw = new byte[0x014F - 0x014E + 1];
-    public int external_ram_size ;
+    public int external_ram_size;
 
 
     CartridgeHeader(byte[] data) {
@@ -49,7 +54,7 @@ class CartridgeHeader {
     public String toString() {
         HexFormat commaFormat = HexFormat.ofDelimiter(" ").withPrefix("");
         HexFormat hex = HexFormat.of();
-        return "CartridgeHeader{" +
+        return "Model.CartridgeHeader{" +
                 "entry_point_raw=" + commaFormat.formatHex(entry_point_raw) +
                 ", logo_raw=" + commaFormat.formatHex(logo_raw) +
                 ", title_raw=" + commaFormat.formatHex(title_raw) +
@@ -79,7 +84,7 @@ class CartridgeHeader {
         }
         return ("Title: " + new String(title_raw, StandardCharsets.US_ASCII) +
                 "\nLicensee: " + licensee + "(" + licensee_code + ")" +
-                "\nCartridge Type: " + EmuLookupTables.cartridge_types[cartridge_type_raw] + "(0x" + String.format("%1$02X", cartridge_type_raw) + ")" +
+                "\nModel.Cartridge Type: " + EmuLookupTables.cartridge_types[cartridge_type_raw] + "(0x" + String.format("%1$02X", cartridge_type_raw) + ")" +
                 "\nSGB flag: " + (sgb_flag_raw == 0x3 ? "SET" : "NOT SET") +
                 "\nROM Size: " + (32 * (1 << ROM_size_raw)) + " KiB (" + ((1 << ROM_size_raw) * 2) + " Banks)" +
                 "\nRAM Size: " + EmuLookupTables.RAM_sizes.getOrDefault((int) RAM_size_raw, 0) + " KiB" +
@@ -89,10 +94,12 @@ class CartridgeHeader {
     }
 }
 
+@Getter
+@Setter
 public class Cartridge extends GBMemory {
-    CartridgeHeader header;
-    public byte[] data;
-    public byte[] external_wram;
+    private CartridgeHeader header;
+    private byte[] data;
+    private byte[] external_wram;
 
     Cartridge(InputStream rom_file) throws IOException {
         data = rom_file.readAllBytes();
@@ -106,5 +113,9 @@ public class Cartridge extends GBMemory {
 
     public void write(char address, byte value) {
         data[address] = value;
+    }
+
+    public String getTitle() {
+        return new String(header.title_raw, StandardCharsets.US_ASCII);
     }
 }
