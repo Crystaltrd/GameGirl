@@ -1,11 +1,11 @@
 public class Timer extends GBMemory {
-    private final Emu ctx;
+    private final EmulationContext ctx;
     private long div = 0xAC00;
     private char tima;
     private byte tma;
     private byte tac = (byte) 0xF8;
 
-    Timer(Emu ctx) {
+    Timer(EmulationContext ctx) {
         this.ctx = ctx;
     }
 

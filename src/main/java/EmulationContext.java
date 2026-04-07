@@ -14,7 +14,7 @@ import java.util.Scanner;
 // 0xFF00 -> 0xFF7F: IO Registers
 // 0xFF80 -> 0xFFFE: HRAM
 // 0xFFFF  Interrupt Enable Register
-public class Emu {
+public class EmulationContext {
     public CPU cpu;
     public InstructionSet instructionSet;
     public Cartridge cartridge;
@@ -242,7 +242,7 @@ public class Emu {
             return step();
     }
 
-    Emu(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
+    EmulationContext(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
         try {
             cartridge = new Cartridge(ROMFile);
             var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");

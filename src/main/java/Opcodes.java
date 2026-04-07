@@ -68,39 +68,39 @@ public enum Opcodes {
     ;
 
     public final String label;
-    static final Function<Emu, Boolean> NONE_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> NONE_CB = (ctx -> {
         System.out.println(ctx.cpu.getCurrInstruction().getMnemonic().label);
         System.out.println("NOT IMPLEMENTED YET");
         return false;
     });
-    static final Function<Emu, Boolean> NOP_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> NOP_CB = (ctx -> {
         // System.out.println("EXECUTING NOP");
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> DI_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> DI_CB = (ctx -> {
         // System.out.println("EXECUTING DI");
         ctx.cpu.setIME(false);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> HALT_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> HALT_CB = (ctx -> {
         // System.out.println("EXECUTING HALT");
         ctx.cpu.setHalted(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> EI_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> EI_CB = (ctx -> {
         // System.out.println("EXECUTING EI");
         ctx.cpu.setQueuedIME(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> CPL_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> CPL_CB = (ctx -> {
         // System.out.println("EXECUTING CPL");
         ctx.cpu.setRegA((byte) ~ctx.cpu.getRegA());
         ctx.cpu.setSFlag(true);
@@ -110,7 +110,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> DAA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> DAA_CB = (ctx -> {
         // System.out.println("EXECUTING DAA");
         byte load = ctx.cpu.getRegA();
         boolean c = ctx.cpu.getFlagReg().isCarryFlag();
@@ -143,7 +143,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> PUSH_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> PUSH_CB = (ctx -> {
         // System.out.println("EXECUTING PUSH");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -153,7 +153,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> POP_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> POP_CB = (ctx -> {
         // System.out.println("EXECUTING POP");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -163,7 +163,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> CCF_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> CCF_CB = (ctx -> {
         // System.out.println("EXECUTING CCF");
         ctx.cpu.setCFlag(!ctx.cpu.getFlagReg().isCarryFlag());
         ctx.cpu.setSFlag(false);
@@ -172,7 +172,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> SCF_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SCF_CB = (ctx -> {
         // System.out.println("EXECUTING SCF");
         ctx.cpu.setCFlag(true);
         ctx.cpu.setSFlag(false);
@@ -181,7 +181,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> JP_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> JP_CB = (ctx -> {
         // System.out.println("EXECUTING JP");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -209,7 +209,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> CALL_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> CALL_CB = (ctx -> {
         // System.out.println("EXECUTING CALL");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -231,7 +231,7 @@ public enum Opcodes {
         }
         return true;
     });
-    static final Function<Emu, Boolean> RST_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RST_CB = (ctx -> {
         // System.out.println("EXECUTING RST");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -242,7 +242,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> RET_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RET_CB = (ctx -> {
         // System.out.println("EXECUTING RET");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -262,7 +262,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> RLA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RLA_CB = (ctx -> {
         // System.out.println("EXECUTING RLA");
         byte load = ctx.cpu.getRegA();
         boolean c = ctx.cpu.getFlagReg().isCarryFlag();
@@ -278,7 +278,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> RRA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RRA_CB = (ctx -> {
         // System.out.println("EXECUTING RRA");
         byte load = ctx.cpu.getRegA();
         boolean c = ctx.cpu.getFlagReg().isCarryFlag();
@@ -294,7 +294,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> RL_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RL_CB = (ctx -> {
         // System.out.println("EXECUTING RL");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -323,7 +323,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> SLA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SLA_CB = (ctx -> {
         // System.out.println("EXECUTING SLA");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -350,7 +350,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> SRA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SRA_CB = (ctx -> {
         // System.out.println("EXECUTING SRA");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -376,7 +376,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> SWAP_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SWAP_CB = (ctx -> {
         // System.out.println("EXECUTING SWAP");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -402,7 +402,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> RR_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RR_CB = (ctx -> {
         // System.out.println("EXECUTING RR");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -431,7 +431,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> SET_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SET_CB = (ctx -> {
         // System.out.println("EXECUTING SET");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -453,7 +453,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> BIT_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> BIT_CB = (ctx -> {
         // System.out.println("EXECUTING BIT");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -472,7 +472,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> RES_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RES_CB = (ctx -> {
         // System.out.println("EXECUTING RES");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -494,7 +494,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> SRL_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SRL_CB = (ctx -> {
         // System.out.println("EXECUTING SRL");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -521,7 +521,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> RLC_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RLC_CB = (ctx -> {
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
         byte load;
@@ -549,7 +549,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> RRC_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RRC_CB = (ctx -> {
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
         byte load;
@@ -580,7 +580,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> RLCA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RLCA_CB = (ctx -> {
         byte load = ctx.cpu.getRegA();
         boolean bit7 = (load & 0b10000000) != 0;
         ctx.cpu.setCFlag(bit7);
@@ -595,7 +595,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> RRCA_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RRCA_CB = (ctx -> {
         byte load = ctx.cpu.getRegA();
         boolean bit0 = (load & 0b00000001) != 0;
         ctx.cpu.setCFlag(bit0);
@@ -613,14 +613,14 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> RETI_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> RETI_CB = (ctx -> {
         // System.out.println("EXECUTING RETI");
         ctx.cpu.setRegPC(ctx.pop());
         ctx.cpu.setQueuedIME(true);
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> JR_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> JR_CB = (ctx -> {
         // System.out.println("EXECUTING JR");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -652,7 +652,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> LD_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> LD_CB = (ctx -> {
         // System.out.println("EXECUTING LD");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -744,7 +744,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> LDH_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> LDH_CB = (ctx -> {
         // System.out.println("EXECUTING LDH");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -769,7 +769,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> XOR_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> XOR_CB = (ctx -> {
         // System.out.println("EXECUTING XOR");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -790,7 +790,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> SUB_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SUB_CB = (ctx -> {
         // System.out.println("EXECUTING SUB");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -820,7 +820,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> SBC_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> SBC_CB = (ctx -> {
         // System.out.println("EXECUTING SBC");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -851,7 +851,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> ADD_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> ADD_CB = (ctx -> {
         // System.out.println("EXECUTING ADD");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -905,7 +905,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> ADC_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> ADC_CB = (ctx -> {
         // System.out.println("EXECUTING ADC");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -935,7 +935,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> CP_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> CP_CB = (ctx -> {
         // System.out.println("EXECUTING CP");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -959,7 +959,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> DEC_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> DEC_CB = (ctx -> {
         // System.out.println("EXECUTING DEC");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -984,7 +984,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> INC_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> INC_CB = (ctx -> {
         // System.out.println("EXECUTING INC");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -1008,7 +1008,7 @@ public enum Opcodes {
         ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
-    static final Function<Emu, Boolean> OR_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> OR_CB = (ctx -> {
         // System.out.println("EXECUTING OR");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -1030,7 +1030,7 @@ public enum Opcodes {
         return true;
     });
 
-    static final Function<Emu, Boolean> AND_CB = (ctx -> {
+    static final Function<EmulationContext, Boolean> AND_CB = (ctx -> {
         // System.out.println("EXECUTING AND");
         Instruction instruction = ctx.cpu.getCurrInstruction();
         InstructionOperands[] operands = instruction.getOperands();
@@ -1102,21 +1102,8 @@ public enum Opcodes {
         DAA.callBack = DAA_CB;
     }
 
-    /*
-     * CPU TESTS:
-     * TODO: 01-special.gb: NOT PASSED(Instrs not implemented yet)
-     * TODO: 02-interrupts.gb: NOT PASSED(Timer and interrupts not implemented)
-     * 03-op sp,hl.gb : PASSED
-     * 04-op r,imm.gb : PASSED
-     * 05-op rp.gb: PASSED
-     * 06-ld r,r.gb: PASSED
-     * 07-jr,jp,call,ret,rst.gb: PASSED
-     * 08-misc instrs.gb: PASSED
-     * TODO: 09-op r,r.gb: NOT TESTED YET
-     * TODO: 10-bit ops.gb: NOT TESTED YET
-     * TODO: 11-op a,(hl).gb: NOT TESTED YET
-     */
-    public Function<Emu, Boolean> callBack;
+
+    public Function<EmulationContext, Boolean> callBack;
 
     Opcodes(String label) {
         this.label = label;

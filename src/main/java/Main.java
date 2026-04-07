@@ -3,11 +3,11 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         try {
-            Emu emulator;
+            EmulationContext emulator;
             if (args.length > 0) {
-                emulator = new Emu(Main.class.getResourceAsStream(args[0]), false, true, false);
+                emulator = new EmulationContext(Main.class.getResourceAsStream(args[0]), false, true, false);
             } else {
-                emulator = new Emu(Main.class.getResourceAsStream("/ROMs/inter.gb"), false, true, false);
+                emulator = new EmulationContext(Main.class.getResourceAsStream("/ROMs/inter.gb"), false, true, false);
             }
             Scanner scanner = new Scanner(System.in);
             while (emulator.emuStep()) {

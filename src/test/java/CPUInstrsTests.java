@@ -29,7 +29,7 @@ public class CPUInstrsTests {
 
         PrintStream processStream = new PrintStream(pr.getOutputStream());
         System.setOut(processStream);
-        Emu emulator = new Emu(getClass().getResourceAsStream(prefix + path + ".gb"), true, false, false);
+        EmulationContext emulator = new EmulationContext(getClass().getResourceAsStream(prefix + path + ".gb"), true, false, false);
         while (emulator.emuStep()) {
             if (!pr.isAlive())
                 break;
