@@ -89,7 +89,7 @@ class CartridgeHeader {
     }
 }
 
-public class Cartridge {
+public class Cartridge extends GBMemory {
     CartridgeHeader header;
     public byte[] data;
     public byte[] external_wram;

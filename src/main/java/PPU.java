@@ -1,4 +1,4 @@
-public class PPU {
+public class PPU extends GBMemory {
     public byte[] TileRAM = new byte[0x97FF - 0x8000 + 1];
     public byte[] BackgroundMap = new byte[0x9FFF - 0x9800 + 1];
     public byte[] ObjectAttributeMemory = new byte[0xFE9F - 0xFE00 + 1];

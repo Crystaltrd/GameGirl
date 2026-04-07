@@ -19,10 +19,12 @@ public class Emu {
     public InstructionSet instructionSet;
     public Cartridge cartridge;
     public PPU ppu = new PPU();
+
+    public IORegisters ioRegisters = new IORegisters(this);
     public byte[] WorkRAM = new byte[0xDFFF - 0xC000 + 1];
-    public byte[] IORegisters = new byte[0xFF7F - 0xFF00 + 1]; //TODO: move to dedicated class later
     public byte[] HRAM = new byte[0xFFFE - 0xFF80 + 1];
-    public byte IEReg = 0x00;
+    public InterruptFlag IEReg = new InterruptFlag((byte) 0);
+    public long ticks = 0;
     public boolean gameboyDoctor;
     public boolean silent;
 
@@ -41,12 +43,12 @@ public class Emu {
             return ppu.read(addr);
         else if (addr < 0xFF00)
             return 0;
-        else if (addr < 0xFF80)
-            return IORegisters[addr - 0xFF00];
-        else if (addr < 0xFFFF)
+        else if (addr < 0xFF80) {
+            return ioRegisters.read((char) (addr - 0xFF00));
+        } else if (addr < 0xFFFF)
             return HRAM[addr - 0xFF80];
         else {
-            return IEReg;
+            return IEReg.getByte();
         }
         return 0;
     }
@@ -67,10 +69,6 @@ public class Emu {
     }
 
     public void bus_write(char addr, byte val) {
-        if (addr == 0xDEF6 && val == 0x40) {
-            addr = addr;
-        }
-            
         if (addr < 0x8000)
             cartridge.write(addr, val);
         else if (addr < 0xA000)
@@ -85,12 +83,12 @@ public class Emu {
             ppu.write(addr, val);
         else if (addr < 0xFF00)
             System.out.println("Unwritable Memory");
-        else if (addr < 0xFF80)
-            IORegisters[addr - 0xFF00] = val;
-        else if (addr < 0xFFFF)
+        else if (addr < 0xFF80) {
+            ioRegisters.write((char) (addr - 0xFF00), val);
+        } else if (addr < 0xFFFF)
             HRAM[addr - 0xFF80] = val;
         else {
-            IEReg = val;
+            IEReg.setByte(val);
         }
     }
 
@@ -116,6 +114,14 @@ public class Emu {
         return instruction.getMnemonic().callBack.apply(this);
     }
 
+    public void tick(int cycles) {
+        for (int i = 0; i < cycles; i++) {
+            for (int j = 0; j < 4; j++) {
+                ticks++;
+            }
+        }
+    }
+
     public boolean step() {
         if (!cpu.isHalted()) {
             cpu.setCurrInstruction(fetchInstr(false));
@@ -123,7 +129,7 @@ public class Emu {
                 cpu.setRegPC((char) (cpu.getRegPC() + 1));
                 cpu.setCurrInstruction(fetchInstr(true));
             }
-
+            tick(1);
             cpu.setCurrParams(fetchParams(cpu.getCurrInstruction()));
             if (!silent)
                 if (!gameboyDoctor) {
@@ -157,11 +163,24 @@ public class Emu {
 //        }
 //    }
 
-//    public void dbg_print() {
+    //    public void dbg_print() {
 //        if (!dbg_msg.isEmpty()) {
 //            System.out.println("DBG: " + dbg_msg);
 //        }
 //    }
+    public void requestInterupt(InterruptSource src) {
+        if (src == InterruptSource.IT_VBLANK) {
+            ioRegisters.IFReg.setVBlankEnable(false);
+        } else if (src == InterruptSource.IT_LCD_STAT) {
+            ioRegisters.IFReg.setLCDEnable(false);
+        } else if (src == InterruptSource.IT_TIMER) {
+            ioRegisters.IFReg.setTimerEnable(false);
+        } else if (src == InterruptSource.IT_SERIAL) {
+            ioRegisters.IFReg.setSerialEnable(false);
+        } else if (src == InterruptSource.IT_JOYPAD) {
+            ioRegisters.IFReg.setJoyPadEnable(false);
+        }
+    }
 
     public boolean emuStep() {
         if (!silent)
@@ -170,7 +189,37 @@ public class Emu {
                         cpu.getRegA(), cpu.getFlagReg().getByte(), cpu.getRegB(), cpu.getRegC(), cpu.getRegD(), cpu.getRegE(), cpu.getRegH(), cpu.getRegL(), (short) cpu.getRegSP(), (short) cpu.getRegPC(), bus_read(cpu.getRegPC()), bus_read((char) (cpu.getRegPC() + 1)), bus_read((char) (cpu.getRegPC() + 2)), bus_read((char) (cpu.getRegPC() + 3)));
             }
 
-        return step();
+        if (cpu.isIME()) {
+            if ((IEReg.getByte() & ioRegisters.IFReg.getByte()) != 0) {
+                if (ioRegisters.IFReg.isVBlankEnable() && IEReg.isVBlankEnable()) {
+                    IEReg.setVBlankEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x40);
+                } else if (ioRegisters.IFReg.isLCDEnable() && IEReg.isLCDEnable()) {
+                    IEReg.setLCDEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x48);
+                } else if (ioRegisters.IFReg.isTimerEnable() && IEReg.isTimerEnable()) {
+                    IEReg.setTimerEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x50);
+                } else if (ioRegisters.IFReg.isSerialEnable() && IEReg.isSerialEnable()) {
+                    IEReg.setSerialEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x58);
+                } else if (ioRegisters.IFReg.isJoyPadEnable() && IEReg.isJoyPadEnable()) {
+                    IEReg.setJoyPadEnable(false);
+                    cpu.setIME(false);
+                    push(cpu.getRegPC());
+                    cpu.setRegPC((char) 0x60);
+                }
+            }
+        }
+        return cpu.isHalted() || step();
     }
 
     Emu(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {

@@ -4,7 +4,7 @@ import lombok.ToString;
 
 @Setter
 @Getter
-public class FlagRegister {
+public class FlagRegister extends BitFieldRegister {
     private boolean CarryFlag;
     private boolean HalfCarryFlag;
     private boolean SubstractFlag;

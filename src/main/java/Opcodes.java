@@ -76,24 +76,28 @@ public enum Opcodes {
     static final Function<Emu, Boolean> NOP_CB = (ctx -> {
         // System.out.println("EXECUTING NOP");
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> DI_CB = (ctx -> {
         // System.out.println("EXECUTING DI");
         ctx.cpu.setIME(false);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> HALT_CB = (ctx -> {
         // System.out.println("EXECUTING HALT");
         ctx.cpu.setHalted(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> EI_CB = (ctx -> {
         // System.out.println("EXECUTING EI");
         ctx.cpu.setQueuedIME(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> CPL_CB = (ctx -> {
@@ -102,6 +106,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(true);
         ctx.cpu.setHFlag(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -135,6 +140,7 @@ public enum Opcodes {
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegA(load);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> PUSH_CB = (ctx -> {
@@ -144,6 +150,7 @@ public enum Opcodes {
         char word = (char) ctx.cpu.getRegFromOperandType(operands[0].getName());
         ctx.push(word);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> POP_CB = (ctx -> {
@@ -153,6 +160,7 @@ public enum Opcodes {
         char word = ctx.pop();
         ctx.cpu.setRegFromOperandType(operands[0].getName(), word);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> CCF_CB = (ctx -> {
@@ -161,6 +169,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(false);
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> SCF_CB = (ctx -> {
@@ -169,6 +178,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(false);
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> JP_CB = (ctx -> {
@@ -177,13 +187,22 @@ public enum Opcodes {
         InstructionOperands[] operands = instruction.getOperands();
         byte[] params = ctx.cpu.getCurrParams();
         switch (operands[0].getName()) {
-            case DOUBLE_REGISTER_HL -> ctx.cpu.setRegPC(ctx.cpu.getRegHL());
-            case ADDRESS_DOUBLEWORD -> ctx.cpu.setRegPC(CPU.get16bit(params));
+            case DOUBLE_REGISTER_HL -> {
+                ctx.cpu.setRegPC(ctx.cpu.getRegHL());
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
+            }
+            case ADDRESS_DOUBLEWORD -> {
+                ctx.cpu.setRegPC(CPU.get16bit(params));
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
+            }
             default -> {
-                if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
+                if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
                     ctx.cpu.setRegPC(CPU.get16bit(params));
-                else
+                    ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
+                } else {
                     ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+                    ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[1] - 1) / 4);
+                }
             }
         }
         return true;
@@ -198,12 +217,16 @@ public enum Opcodes {
         if (Objects.requireNonNull(operands[0].getName()) == OperandType.ADDRESS_DOUBLEWORD) {
             ctx.push(nextPC);
             ctx.cpu.setRegPC(CPU.get16bit(params));
+            ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         } else {
             if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
                 ctx.push(nextPC);
                 ctx.cpu.setRegPC(CPU.get16bit(params));
-            } else
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
+            } else {
                 ctx.cpu.setRegPC(nextPC);
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[1] - 1) / 4);
+            }
         }
         return true;
     });
@@ -215,6 +238,7 @@ public enum Opcodes {
         ctx.push(nextPC);
         char addr = (char) Integer.parseInt(operands[0].getName().getLabel().replace("$", ""), 16);
         ctx.cpu.setRegPC(addr);
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> RET_CB = (ctx -> {
@@ -224,11 +248,15 @@ public enum Opcodes {
         char nextPC = (char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes());
         if (operands.length == 0) {
             ctx.cpu.setRegPC(ctx.pop());
+            ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         } else {
-            if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName()))
+            if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
                 ctx.cpu.setRegPC(ctx.pop());
-            else
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
+            } else {
                 ctx.cpu.setRegPC(nextPC);
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[1] - 1) / 4);
+            }
         }
         return true;
     });
@@ -245,6 +273,7 @@ public enum Opcodes {
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegA(load);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -261,6 +290,7 @@ public enum Opcodes {
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegA(load);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> RL_CB = (ctx -> {
@@ -288,6 +318,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -314,6 +345,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -340,6 +372,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> SWAP_CB = (ctx -> {
@@ -365,6 +398,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> RR_CB = (ctx -> {
@@ -393,6 +427,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> SET_CB = (ctx -> {
@@ -414,6 +449,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> BIT_CB = (ctx -> {
@@ -431,6 +467,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(false);
         ctx.cpu.setHFlag(true);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -453,6 +490,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> SRL_CB = (ctx -> {
@@ -478,6 +516,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -505,6 +544,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -536,6 +576,7 @@ public enum Opcodes {
             ctx.bus_write(addr, load);
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> RLCA_CB = (ctx -> {
@@ -549,6 +590,7 @@ public enum Opcodes {
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegA(load);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -567,12 +609,14 @@ public enum Opcodes {
         ctx.cpu.setHFlag(false);
         ctx.cpu.setRegA(load);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + 1));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> RETI_CB = (ctx -> {
         // System.out.println("EXECUTING RETI");
         ctx.cpu.setRegPC(ctx.pop());
         ctx.cpu.setQueuedIME(true);
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> JR_CB = (ctx -> {
@@ -585,6 +629,7 @@ public enum Opcodes {
             case SIGNED_IMMEDIATE: {
                 ALUResult result = ALU.addByteToReg(nextPC, params[0], true);
                 ctx.cpu.setRegPC((char) result.result);
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
             }
             break;
             case FLAG_NOTCARRY:
@@ -594,8 +639,10 @@ public enum Opcodes {
                 if ((boolean) ctx.cpu.getRegFromOperandType(operands[0].getName())) {
                     ALUResult result = ALU.addByteToReg(nextPC, params[0], true);
                     ctx.cpu.setRegPC((char) result.result);
+                    ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                 } else {
                     ctx.cpu.setRegPC(nextPC);
+                    ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[1] - 1) / 4);
                 }
                 break;
             default:
@@ -631,6 +678,7 @@ public enum Opcodes {
                         ctx.cpu.setRegFromOperandType(operands[0].getName(), load);
                     } else {
                         System.out.println("UNSUPPORTED");
+                        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                         return false;
                     }
                 } else if (OperandType.isr16(operands[0])) {
@@ -648,6 +696,7 @@ public enum Opcodes {
                             ctx.bus_write(addr, params[0]);
                         } else {
                             System.out.println("UNSUPPORTED");
+                            ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                             return false;
                         }
                         if (operands[0].isDecrement())
@@ -666,10 +715,12 @@ public enum Opcodes {
                         ctx.bus_write((char) (CPU.get16bit(params) + 1), CPU.getHigh(load));
                     } else {
                         System.out.println("UNSUPPORTED");
+                        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                         return false;
                     }
                 } else {
                     System.out.println("UNSUPPORTED");
+                    ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                     return false;
                 }
                 break;
@@ -685,9 +736,11 @@ public enum Opcodes {
                 break;
             default:
                 System.out.println("UNSUPPORTED");
+                ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
                 return false;
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> LDH_CB = (ctx -> {
@@ -712,6 +765,7 @@ public enum Opcodes {
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
 
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> XOR_CB = (ctx -> {
@@ -732,6 +786,7 @@ public enum Opcodes {
         ctx.cpu.setRegA((byte) result.result);
         ctx.cpu.setFlagReg(result);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> SUB_CB = (ctx -> {
@@ -760,6 +815,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(true);
         ctx.cpu.setRegA((byte) (result & 0xFF));
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -791,6 +847,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(true);
         ctx.cpu.setRegA((byte) (result & 0xFF));
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> ADD_CB = (ctx -> {
@@ -844,6 +901,7 @@ public enum Opcodes {
             }
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> ADC_CB = (ctx -> {
@@ -873,6 +931,7 @@ public enum Opcodes {
         ctx.cpu.setSFlag(false);
         ctx.cpu.setRegA((byte) (result & 0xFF));
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> CP_CB = (ctx -> {
@@ -895,6 +954,7 @@ public enum Opcodes {
         ctx.cpu.setHFlag(-(load & 0xF) + (ctx.cpu.getRegA() & 0xF) < 0);
         ctx.cpu.setCFlag((char) (load & 0xFF) > (char) (ctx.cpu.getRegA() & 0xFF));
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -919,6 +979,7 @@ public enum Opcodes {
             }
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -943,6 +1004,7 @@ public enum Opcodes {
             }
         }
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
     static final Function<Emu, Boolean> OR_CB = (ctx -> {
@@ -963,6 +1025,7 @@ public enum Opcodes {
         ctx.cpu.setRegA((byte) result.result);
         ctx.cpu.setFlagReg(result);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
@@ -984,6 +1047,7 @@ public enum Opcodes {
         ctx.cpu.setRegA((byte) result.result);
         ctx.cpu.setFlagReg(result);
         ctx.cpu.setRegPC((char) (ctx.cpu.getRegPC() + ctx.cpu.getCurrInstruction().getBytes()));
+        ctx.tick((ctx.cpu.getCurrInstruction().getCycles()[0] - 1) / 4);
         return true;
     });
 
