@@ -7,11 +7,12 @@ public class Main {
             if (args.length > 0) {
                 emulator = new Emu(Main.class.getResourceAsStream(args[0]), false, true, false);
             } else {
-                emulator = new Emu(Main.class.getResourceAsStream("/ROMs/tetris.gb"), false, false, false);
+                emulator = new Emu(Main.class.getResourceAsStream("/ROMs/inter.gb"), false, true, false);
             }
             Scanner scanner = new Scanner(System.in);
             while (emulator.emuStep()) {
-                System.out.println("Ticks: " + emulator.ticks);
+                emulator.dbg_update();
+                emulator.dbg_print();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
