@@ -17,7 +17,7 @@ public class EmulatorView extends JFrame {
     public JTextArea debugScreen;
     JToolBar toolBar;
     JPanel gameCanvas;
-    TileMapPanel tileMap;
+    public TileMapPanel tileMap;
     JPanel registersPanel;
     Color[] palette = {
             new Color(0xaaaaaa),
@@ -59,6 +59,7 @@ public class EmulatorView extends JFrame {
     }
 
     public void update() {
+        updateTiles();
         debugController.updateDebug();
     }
 
@@ -83,6 +84,10 @@ public class EmulatorView extends JFrame {
         this.getContentPane().add(registersPanel, BorderLayout.WEST);
         pack();
         setVisible(true);
+    }
+
+    public void updateTiles() {
+        tileMap.repaint();
     }
 }
 

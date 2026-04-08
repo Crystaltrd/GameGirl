@@ -18,7 +18,7 @@ public class EmulationContext {
     public CPU cpu;
     public InstructionSet instructionSet;
     public Cartridge cartridge;
-    public PPU ppu = new PPU();
+    public PPU ppu = new PPU(this);
 
     public IORegisters ioRegisters = new IORegisters(this);
     public byte[] WorkRAM = new byte[0xDFFF - 0xC000 + 1];
@@ -79,11 +79,12 @@ public class EmulationContext {
             WorkRAM[addr - 0xC000] = val;
         else if (addr < 0xFE00)
             WorkRAM[addr - 0xE000] = val;
-        else if (addr < 0xFEA0)
-            ppu.write(addr, val);
-        else if (addr < 0xFF00)
-            System.out.println("Unwritable Memory");
-        else if (addr < 0xFF80) {
+        else if (addr < 0xFEA0) {
+            if (!ioRegisters.dmaRegister.isActive())
+                ppu.write(addr, val);
+        } else if (addr < 0xFF00) {
+            System.out.printf("Unwritable Memory: %04X\n", (short) addr);
+        } else if (addr < 0xFF80) {
             ioRegisters.write((char) (addr - 0xFF00), val);
         } else if (addr < 0xFFFF)
             HRAM[addr - 0xFF80] = val;
@@ -183,6 +184,7 @@ public class EmulationContext {
                 ticks++;
                 ioRegisters.timer.tick();
             }
+            ioRegisters.dmaRegister.tick();
         }
     }
 

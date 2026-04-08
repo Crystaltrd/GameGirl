@@ -10,7 +10,7 @@ public class Main {
             if (args.length > 0) {
                 emulator = new EmulationContext(Main.class.getResourceAsStream(args[0]), false, true, false);
             } else {
-                emulator = new EmulationContext(Main.class.getResourceAsStream("/ROMs/test.gb"), false, false, false);
+                emulator = new EmulationContext(Main.class.getResourceAsStream("/ROMs/tetris.gb"), false, false, true);
             }
             EmulatorView emulatorView = new EmulatorView(emulator);
             while (emulator.emuStep()) {

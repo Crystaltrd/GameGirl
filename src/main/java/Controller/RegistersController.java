@@ -4,8 +4,6 @@ import Vue.EmulatorView;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Objects;
-
 public class RegistersController implements ActionListener {
     private final EmulatorView viewctx;
 
@@ -36,5 +34,6 @@ public class RegistersController implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
         viewctx.makeRegisterPanel();
+        viewctx.updateTiles();
     }
 }
