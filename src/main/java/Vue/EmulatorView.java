@@ -7,6 +7,8 @@ import Model.*;
 import javax.swing.*;
 import java.awt.*;
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EmulatorView extends JFrame {
     public final EmulationContext ctx;
@@ -19,6 +21,7 @@ public class EmulatorView extends JFrame {
     JPanel gameCanvas;
     public TileMapPanel tileMap;
     JPanel registersPanel;
+    private HashMap<String, JTextField> componentMap;
     Color[] palette = {
             new Color(0xaaaaaa),
             new Color(0x9bbc0f),
@@ -60,10 +63,16 @@ public class EmulatorView extends JFrame {
 
     public void update() {
         updateTiles();
+        updatePanel();
         debugController.updateDebug();
     }
 
+    public void updatePanel() {
+        componentMap.forEach((k, v) -> v.setText(registersController.getRegValue(k)));
+    }
+
     public void makeRegisterPanel() {
+        componentMap = new HashMap<String, JTextField>();
         registersPanel = new JPanel(new GridLayout(registers.length + 1, 0));
         registersPanel.setBorder(BorderFactory.createLineBorder(Color.black));
         for (String reg : registers) {
@@ -74,7 +83,9 @@ public class EmulatorView extends JFrame {
             var textField = new JTextField();
             textField.setPreferredSize(new Dimension(90, 20));
             textField.setText(registersController.getRegValue(reg));
+            textField.setName(reg);
             textField.setEditable(false);
+            componentMap.put(reg, textField);
             panel.add(textField);
             registersPanel.add(panel);
         }

@@ -33,7 +33,6 @@ public class RegistersController implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
-        viewctx.makeRegisterPanel();
-        viewctx.updateTiles();
+        viewctx.update();
     }
 }

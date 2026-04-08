@@ -102,11 +102,29 @@ public class EmulationContext {
         return params;
     }
 
-    public Instruction fetchInstr(boolean prefixed) {
-        if (prefixed)
-            return instructionSet.getCBPrefixedInstruction(String.format("0x%1$02X", bus_read(cpu.getRegPC())));
-        else
-            return instructionSet.getUnprefixedInstruction(String.format("0x%1$02X", bus_read(cpu.getRegPC())));
+    public EmulationContext(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
+        try {
+            cartridge = new Cartridge(ROMFile);
+            var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");
+            instructionSet = InstructionSet.fromFile(instructionStream);
+            instructionSet.fillParsed();
+            cpu = new CPU();
+            this.gameboyDoctor = gameboyDoctor;
+            this.silent = silent;
+            cpu.setRegPC((char) 0x0100);
+            bus_write((char) 0xFF44, (byte) 0x90);
+            if (!silent) {
+                if (!gameboyDoctor) {
+                    System.out.println(cartridge.getHeader().humanReadable());
+                    if (interactive) {
+                        Scanner scanner = new Scanner(System.in);
+                        scanner.nextLine();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean execute() {
@@ -188,7 +206,15 @@ public class EmulationContext {
         }
     }
 
+    public Instruction fetchInstr(boolean prefixed) {
+        if (prefixed)
+            return instructionSet.getCBPrefixedInstruction(bus_read(cpu.getRegPC()) & 0xFF);
+        else
+            return instructionSet.getUnprefixedInstruction(bus_read(cpu.getRegPC()) & 0xFF);
+    }
+
     public boolean emuStep() {
+        dbg_update();
         if (!silent)
             if (gameboyDoctor && !GBDoctorskipInstr) {
                 System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X%n",
@@ -242,29 +268,5 @@ public class EmulationContext {
                 return true;
         } else
             return step();
-    }
-
-    public EmulationContext(InputStream ROMFile, boolean gameboyDoctor, boolean interactive, boolean silent) {
-        try {
-            cartridge = new Cartridge(ROMFile);
-            var instructionStream = getClass().getResourceAsStream("/json/Opcodes.json");
-            instructionSet = InstructionSet.fromFile(instructionStream);
-            cpu = new CPU();
-            this.gameboyDoctor = gameboyDoctor;
-            this.silent = silent;
-            cpu.setRegPC((char) 0x0100);
-            bus_write((char) 0xFF44, (byte) 0x90);
-            if (!silent) {
-                if (!gameboyDoctor) {
-                    System.out.println(cartridge.getHeader().humanReadable());
-                    if (interactive) {
-                        Scanner scanner = new Scanner(System.in);
-                        scanner.nextLine();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

@@ -11,8 +11,6 @@ public class DebugController {
     }
 
     public void updateDebug() {
-
-        viewctx.ctx.dbg_update();
         if (!viewctx.ctx.dbg_msg.isEmpty())
             viewctx.debugScreen.setText(String.valueOf(viewctx.ctx.dbg_msg));
     }
