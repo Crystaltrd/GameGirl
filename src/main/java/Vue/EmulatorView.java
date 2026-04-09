@@ -6,9 +6,7 @@ import Model.*;
 
 import javax.swing.*;
 import java.awt.*;
-import java.security.cert.X509Certificate;
 import java.util.HashMap;
-import java.util.Map;
 
 public class EmulatorView extends JFrame {
     public final EmulationContext ctx;
@@ -19,7 +17,8 @@ public class EmulatorView extends JFrame {
     public JTextArea debugScreen;
     JToolBar toolBar;
     JPanel gameCanvas;
-    public TileMapPanel tileMap;
+    TileMapPanel tileMap;
+    GamePanel gameBackground;
     JPanel registersPanel;
     private HashMap<String, JTextField> componentMap;
     Color[] palette = {
@@ -27,6 +26,13 @@ public class EmulatorView extends JFrame {
             new Color(0x9bbc0f),
             new Color(0x306230),
             new Color(0x0f380f)
+    };
+
+    Color[] paletteAlt = {
+            new Color(0x081820),
+            new Color(0x346856),
+            new Color(0x88c070),
+            new Color(0xe0f8d0)
     };
     int scale = 2;
 
@@ -39,12 +45,17 @@ public class EmulatorView extends JFrame {
         makeToolbar();
         makeRegisterPanel();
         debugScreen = new JTextArea();
-        debugScreen.setMinimumSize(new Dimension(450, 60));
-        debugScreen.setMaximumSize(new Dimension(450, 90));
+        debugScreen.setMinimumSize(new Dimension(400, 60));
+        debugScreen.setMaximumSize(new Dimension(400, 90));
         debugScreen.setEditable(false);
         tileMap = new TileMapPanel(this);
+        gameBackground = new GamePanel(this);
+        gameCanvas = new JPanel(new FlowLayout());
+        gameCanvas.setSize(new Dimension(3, 3));
+        gameCanvas.add(gameBackground);
         getContentPane().add(tileMap, BorderLayout.EAST);
         getContentPane().add(toolBar, BorderLayout.NORTH);
+        getContentPane().add(gameCanvas, BorderLayout.CENTER);
         getContentPane().add(registersPanel, BorderLayout.WEST);
         getContentPane().add(debugScreen, BorderLayout.SOUTH);
         pack();
@@ -72,7 +83,7 @@ public class EmulatorView extends JFrame {
     }
 
     public void makeRegisterPanel() {
-        componentMap = new HashMap<String, JTextField>();
+        componentMap = new HashMap<>();
         registersPanel = new JPanel(new GridLayout(registers.length + 1, 0));
         registersPanel.setBorder(BorderFactory.createLineBorder(Color.black));
         for (String reg : registers) {
@@ -99,11 +110,13 @@ public class EmulatorView extends JFrame {
 
     public void updateTiles() {
         tileMap.repaint();
+        gameBackground.repaint();
     }
 }
 
 class TileMapPanel extends JPanel {
     public EmulatorView parent;
+    public int select = 0x180;
 
     public TileMapPanel(EmulatorView parent) {
         setBorder(BorderFactory.createLineBorder(Color.black));
@@ -111,7 +124,9 @@ class TileMapPanel extends JPanel {
     }
 
     public Dimension getPreferredSize() {
-        return new Dimension(27 * 8 * parent.scale, 16 * 8 * parent.scale);
+        return new Dimension(
+                16 * 8 * parent.scale + (16 * parent.scale),
+                24 * 8 * parent.scale + (24 * parent.scale));
     }
 
     public void drawTile(Graphics g, char addr, int tileNum, int x, int y) {
@@ -126,7 +141,10 @@ class TileMapPanel extends JPanel {
                 rc_y = y + ((tileY / 2) * parent.scale);
                 rc_w = parent.scale;
                 rc_h = parent.scale;
-                g.setColor(parent.palette[pixel]);
+                if (tileNum == select)
+                    g.setColor(parent.paletteAlt[pixel]);
+                else
+                    g.setColor(parent.palette[pixel]);
                 g.fillRect(rc_x, rc_y, rc_w, rc_h);
             }
         }
@@ -138,10 +156,61 @@ class TileMapPanel extends JPanel {
         int yDraw = 0;
         super.paintComponent(g);
         g.setColor(Color.BLACK);
-        g.fillRect(0, 0, 27 * 8 * parent.scale, 18 * 8 * parent.scale);
-        for (int y = 0; y < 16; y++) {
-            for (int x = 0; x < 24; x++) {
+        g.fillRect(0, 0, 16 * 8 * parent.scale + (16 * parent.scale), 24 * 8 * parent.scale + (24 * parent.scale));
+        for (int y = 0; y < 24; y++) {
+            for (int x = 0; x < 16; x++) {
                 drawTile(g, (char) 0x8000, tilenum, xDraw + (x * parent.scale), yDraw + (y * parent.scale));
+                xDraw += (8 * parent.scale);
+                tilenum++;
+            }
+            yDraw += (8 * parent.scale);
+            xDraw = 0;
+        }
+    }
+}
+
+class GamePanel extends JPanel {
+    public EmulatorView parent;
+
+    public GamePanel(EmulatorView parent) {
+        setBorder(BorderFactory.createLineBorder(Color.black));
+        this.parent = parent;
+    }
+
+    public Dimension getPreferredSize() {
+
+        return new Dimension(32 * 8 * parent.scale + (32 * parent.scale), 32 * 8 * parent.scale + (32 * parent.scale));
+    }
+
+
+    public void drawTile(Graphics g, char addr, int tileNum, int x, int y) {
+        int rc_x = 0, rc_y = 0, rc_w = 0, rc_h = 0;
+        for (int tileY = 0; tileY < 16; tileY += 2) {
+            byte b1 = parent.ctx.bus_read((char) (addr + (tileNum * 16) + tileY));
+            byte b2 = parent.ctx.bus_read((char) (addr + (tileNum * 16) + tileY + 1));
+            for (int j = 7; j >= 0; j--) {
+                byte pixel = 0;
+                pixel = (byte) ((byte) (((b2 >> j) & 1) << 1) | (byte) (((b1 >> j) & 1)));
+                rc_x = x + ((7 - j) * parent.scale);
+                rc_y = y + ((tileY / 2) * parent.scale);
+                rc_w = parent.scale;
+                rc_h = parent.scale;
+                g.setColor(parent.paletteAlt[pixel]);
+                g.fillRect(rc_x, rc_y, rc_w, rc_h);
+            }
+        }
+    }
+
+    public void paintComponent(Graphics g) {
+        int tilenum = 0;
+        int xDraw = 0;
+        int yDraw = 0;
+        super.paintComponent(g);
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, 32 * 8 * parent.scale + (32 * parent.scale), 32 * 8 * parent.scale + (32 * parent.scale));
+        for (int y = 0; y < 32; y++) {
+            for (int x = 0; x < 32; x++) {
+                drawTile(g, (char) 0x8000, parent.ctx.bus_read((char) (0x9800 + tilenum)) & 0xFF, xDraw + (x * parent.scale), yDraw + (y * parent.scale));
                 xDraw += (8 * parent.scale);
                 tilenum++;
             }

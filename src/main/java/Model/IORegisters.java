@@ -8,7 +8,8 @@ public class IORegisters extends GBMemory {
     public DMARegister dmaRegister;
     private final EmulationContext emulator;
     public Timer timer;
-    public byte LY = 0;
+    public byte LY = (byte) 0x90;
+
     IORegisters(EmulationContext emulator) {
         this.emulator = emulator;
         this.timer = new Timer(emulator);
@@ -23,7 +24,10 @@ public class IORegisters extends GBMemory {
         else if (addr == HardwareRegisters.DMA.addr)
             return dmaRegister.getAddr();
         else if (addr == HardwareRegisters.LY.addr)
-            return LY++;
+            if (emulator.gameboyDoctor)
+                return LY;
+            else
+                return LY++;
         return data[addr];
     }
 
@@ -33,7 +37,6 @@ public class IORegisters extends GBMemory {
         } else if (addr == HardwareRegisters.IF.addr)
             IFReg.setByte(val);
         else if (addr == HardwareRegisters.DMA.addr) {
-            System.out.printf("%02X", val);
             dmaRegister.start(val);
         } else if (addr == HardwareRegisters.LY.addr)
             LY = val;
