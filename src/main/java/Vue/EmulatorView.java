@@ -130,23 +130,15 @@ class TileMapPanel extends JPanel {
     }
 
     public void drawTile(Graphics g, char addr, int tileNum, int x, int y) {
-        int rc_x = 0, rc_y = 0, rc_w = 0, rc_h = 0;
-        for (int tileY = 0; tileY < 16; tileY += 2) {
-            byte b1 = parent.ctx.bus_read((char) (addr + (tileNum * 16) + tileY));
-            byte b2 = parent.ctx.bus_read((char) (addr + (tileNum * 16) + tileY + 1));
-            for (int j = 7; j >= 0; j--) {
-                byte pixel = 0;
-                pixel = (byte) ((byte) (((b2 >> j) & 1) << 1) | (byte) (((b1 >> j) & 1)));
-                rc_x = x + ((7 - j) * parent.scale);
-                rc_y = y + ((tileY / 2) * parent.scale);
-                rc_w = parent.scale;
-                rc_h = parent.scale;
-                if (tileNum == select)
-                    g.setColor(parent.paletteAlt[pixel]);
-                else
-                    g.setColor(parent.palette[pixel]);
-                g.fillRect(rc_x, rc_y, rc_w, rc_h);
+        int rc_x = x, rc_y = y;
+        for (int pixy = 0; pixy < 8; pixy++) {
+            for (int pixx = 0; pixx < 8; pixx++) {
+                g.setColor(parent.palette[parent.ctx.ppu.getPixel(tileNum, pixx, pixy)]);
+                g.fillRect(rc_x, rc_y, parent.scale, parent.scale);
+                rc_x += parent.scale;
             }
+            rc_y += parent.scale;
+            rc_x = x;
         }
     }
 
@@ -179,7 +171,7 @@ class GamePanel extends JPanel {
 
     public Dimension getPreferredSize() {
 
-        return new Dimension(32 * 8 * parent.scale + (32 * parent.scale), 32 * 8 * parent.scale + (32 * parent.scale));
+        return new Dimension(32 * 8 * parent.scale, 32 * 8 * parent.scale);
     }
 
 
@@ -207,10 +199,13 @@ class GamePanel extends JPanel {
         int yDraw = 0;
         super.paintComponent(g);
         g.setColor(Color.BLACK);
-        g.fillRect(0, 0, 32 * 8 * parent.scale + (32 * parent.scale), 32 * 8 * parent.scale + (32 * parent.scale));
+        g.fillRect(0, 0, 32 * 8 * parent.scale, 32 * 8 * parent.scale);
+
         for (int y = 0; y < 32; y++) {
             for (int x = 0; x < 32; x++) {
-                drawTile(g, (char) 0x8000, parent.ctx.bus_read((char) (0x9800 + tilenum)) & 0xFF, xDraw + (x * parent.scale), yDraw + (y * parent.scale));
+                drawTile(g, (char) 0x8000, parent.ctx.bus_read((char) (0x9800 + tilenum)) & 0xFF, xDraw, yDraw);
+                g.setColor(parent.paletteAlt[3]);
+                g.drawRect(0, 0, 160 * parent.scale, 144 * parent.scale);
                 xDraw += (8 * parent.scale);
                 tilenum++;
             }

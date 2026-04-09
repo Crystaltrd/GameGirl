@@ -3,36 +3,46 @@ package Model;
 import java.util.Scanner;
 
 public class PPU extends GBMemory {
-    public byte[] TileRAM = new byte[0x97FF - 0x8000 + 1];
+    public Tile[] tiles = new Tile[384];
     public byte[] BackgroundMap = new byte[0x9FFF - 0x9800 + 1];
-    public byte[] ObjectAttributeMemory = new byte[0xFE9F - 0xFE00 + 1];
+    public ObjectAttributes[] objectAttributes = new ObjectAttributes[40];
     private EmulationContext ctx;
 
     public PPU(EmulationContext ctx) {
         this.ctx = ctx;
+        for (int i = 0; i < objectAttributes.length; i++) {
+            objectAttributes[i] = new ObjectAttributes();
+        }
+
+        for (int i = 0; i < tiles.length; i++) {
+            tiles[i] = new Tile();
+        }
     }
 
     public byte read(char address) {
         if (address >= 0x8000 && address <= 0x97FF)
-            return TileRAM[address - 0x8000];
+            return tiles[(address - 0x8000) / 16].getByte((address - 0x8000) % 16);
         else if (address >= 0x9800 && address <= 0x9FFF)
             return BackgroundMap[address - 0x9800];
         else if (address >= 0xFE00 && address <= 0xFE9F) {
             if (ctx.ioRegisters.dmaRegister.isActive())
                 return (byte) 0xFF;
-            return ObjectAttributeMemory[address - 0xFE00];
+            return objectAttributes[(address - 0xFE00) / 4].getByte((address - 0xFE00) % 4);
         } else
             return 0;
     }
 
     public void write(char address, byte value) {
         if (address >= 0x8000 && address <= 0x97FF)
-            TileRAM[address - 0x8000] = value;
+            tiles[(address - 0x8000) / 16].setByte((address - 0x8000) % 16, value);
         else if (address >= 0x9800 && address <= 0x9FFF)
             BackgroundMap[address - 0x9800] = value;
         else if (address >= 0xFE00 && address <= 0xFE9F) {
-            ObjectAttributeMemory[address - 0xFE00] = value;
+            objectAttributes[(address - 0xFE00) / 4].setByte((address - 0xFE00) % 4, value);
         }
     }
 
+    public byte getPixel(int tile, int x, int y) {
+        return tiles[tile].getPixel(7 - x, y);
+    }
 }
