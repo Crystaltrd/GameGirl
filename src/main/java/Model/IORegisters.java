@@ -43,7 +43,7 @@ public class IORegisters extends GBMemory {
             IFReg.setByte(val);
         else if (addr == HardwareRegisters.DMA.addr) {
             dmaRegister.start(val);
-        } else if ((addr >= HardwareRegisters.NR10.addr && addr <= HardwareRegisters.NR26.addr) || (addr >= 0x30 && addr <= 0x3F))
+        } else if ((addr >= HardwareRegisters.NR10.addr && addr <= HardwareRegisters.NR52.addr) || (addr >= 0x30 && addr <= 0x3F))
             apu.write(addr, val);
         else if (addr == HardwareRegisters.LY.addr)
             LY = val;
