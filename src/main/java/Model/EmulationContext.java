@@ -201,6 +201,7 @@ public class EmulationContext {
             for (int j = 0; j < 4; j++) {
                 ticks++;
                 ioRegisters.timer.tick();
+                ioRegisters.apu.tick();
             }
             ioRegisters.dmaRegister.tick();
         }
