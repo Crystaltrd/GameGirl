@@ -20,7 +20,7 @@ public class CPUInstrsTests {
     public void cpuInstrsTest(String path) throws IOException {
         PrintStream stdout = System.out;
         String n = path.substring(0, 2);
-        ProcessBuilder pb = new ProcessBuilder("python3", Objects.requireNonNull(getClass().getResource("/gameboy-doctor/gameboy-doctor")).getPath(), "-", "cpu_instrs", n);
+        ProcessBuilder pb = new ProcessBuilder("python", Objects.requireNonNull(getClass().getResource("/gameboy-doctor/gameboy-doctor")).getPath(), "-", "cpu_instrs", n);
         pb.redirectErrorStream(true);
         // File errFile = new File("logs/error" + n);
         //pb.redirectError(errFile);
