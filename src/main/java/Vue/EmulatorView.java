@@ -176,23 +176,17 @@ class GamePanel extends JPanel {
 
 
     public void drawTile(Graphics g, char addr, int tileNum, int x, int y) {
-        int rc_x = 0, rc_y = 0, rc_w = 0, rc_h = 0;
-        for (int tileY = 0; tileY < 16; tileY += 2) {
-            byte b1 = parent.ctx.bus_read((char) (addr + (tileNum * 16) + tileY));
-            byte b2 = parent.ctx.bus_read((char) (addr + (tileNum * 16) + tileY + 1));
-            for (int j = 7; j >= 0; j--) {
-                byte pixel = 0;
-                pixel = (byte) ((byte) (((b2 >> j) & 1) << 1) | (byte) (((b1 >> j) & 1)));
-                rc_x = x + ((7 - j) * parent.scale);
-                rc_y = y + ((tileY / 2) * parent.scale);
-                rc_w = parent.scale;
-                rc_h = parent.scale;
-                g.setColor(parent.paletteAlt[pixel]);
-                g.fillRect(rc_x, rc_y, rc_w, rc_h);
+        int rc_x = x, rc_y = y;
+        for (int pixy = 0; pixy < 8; pixy++) {
+            for (int pixx = 0; pixx < 8; pixx++) {
+                g.setColor(parent.paletteAlt[parent.ctx.ppu.getPixel(tileNum, pixx, pixy)]);
+                g.fillRect(rc_x, rc_y, parent.scale, parent.scale);
+                rc_x += parent.scale;
             }
+            rc_y += parent.scale;
+            rc_x = x;
         }
     }
-
     public void paintComponent(Graphics g) {
         int tilenum = 0;
         int xDraw = 0;
