@@ -37,17 +37,15 @@ public class IORegisters extends GBMemory {
     }
 
     public void write(char addr, byte val) {
-        if ((addr >= 0x10 && addr <= 0x26) || (addr >= 0x30 && addr <= 0x3F)) {
-            apu.write(addr, val);
-            return;
-        }
         if (addr >= HardwareRegisters.DIV.addr && addr <= HardwareRegisters.TAC.addr) {
             timer.write(addr, val);
         } else if (addr == HardwareRegisters.IF.addr)
             IFReg.setByte(val);
         else if (addr == HardwareRegisters.DMA.addr) {
             dmaRegister.start(val);
-        } else if (addr == HardwareRegisters.LY.addr)
+        } else if ((addr >= HardwareRegisters.NR10.addr && addr <= HardwareRegisters.NR26.addr) || (addr >= 0x30 && addr <= 0x3F))
+            apu.write(addr, val);
+        else if (addr == HardwareRegisters.LY.addr)
             LY = val;
         else
             data[addr] = val;
