@@ -1,0 +1,3 @@
+[submodule "src/test/resources/gameboy-doctor"]
+	path = src/test/resources/gameboy-doctor
+	url = https://github.com/robert/gameboy-doctor
