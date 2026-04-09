@@ -27,6 +27,8 @@ public class RegistersController implements ActionListener {
             case "TIMA" -> String.format("%04X", (short) viewctx.ctx.ioRegisters.timer.getTima());
             case "TMA" -> String.format("%02X", viewctx.ctx.ioRegisters.timer.getTma());
             case "TAC" -> String.format("%02X", viewctx.ctx.ioRegisters.timer.getTac());
+            case "LCDC" ->
+                    String.format("%s", Integer.toBinaryString(viewctx.ctx.ioRegisters.lcdControl.getByte() & 0xFF));
             case null, default -> "TODO";
         };
     }

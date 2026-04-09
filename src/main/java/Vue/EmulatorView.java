@@ -13,7 +13,7 @@ public class EmulatorView extends JFrame {
     public final RegistersController registersController = new RegistersController(this);
     public final DebugController debugController = new DebugController(this);
     private final String[] registers = {"A", "F", "BC", "DE", "HL", "SP", "PC",
-            "IME", "IE", "HALT", "INSTR", "DIV", "TIMA", "TMA", "TAC", "LY", "STAT"};
+            "IME", "IE", "HALT", "INSTR", "DIV", "TIMA", "TMA", "TAC", "LY", "LCDC"};
     public JTextArea debugScreen;
     JToolBar toolBar;
     JPanel gameCanvas;
@@ -116,7 +116,7 @@ public class EmulatorView extends JFrame {
 
 class TileMapPanel extends JPanel {
     public EmulatorView parent;
-    public int select = 0x180;
+    public int select = 256;
 
     public TileMapPanel(EmulatorView parent) {
         setBorder(BorderFactory.createLineBorder(Color.black));
@@ -133,7 +133,10 @@ class TileMapPanel extends JPanel {
         int rc_x = x, rc_y = y;
         for (int pixy = 0; pixy < 8; pixy++) {
             for (int pixx = 0; pixx < 8; pixx++) {
-                g.setColor(parent.palette[parent.ctx.ppu.getPixel(tileNum, pixx, pixy)]);
+                if (select == tileNum)
+                    g.setColor(parent.paletteAlt[parent.ctx.ppu.getPixel(tileNum, pixx, pixy, true)]);
+                else
+                    g.setColor(parent.palette[parent.ctx.ppu.getPixel(tileNum, pixx, pixy, true)]);
                 g.fillRect(rc_x, rc_y, parent.scale, parent.scale);
                 rc_x += parent.scale;
             }
@@ -179,7 +182,7 @@ class GamePanel extends JPanel {
         int rc_x = x, rc_y = y;
         for (int pixy = 0; pixy < 8; pixy++) {
             for (int pixx = 0; pixx < 8; pixx++) {
-                g.setColor(parent.paletteAlt[parent.ctx.ppu.getPixel(tileNum, pixx, pixy)]);
+                g.setColor(parent.palette[parent.ctx.ppu.getPixel(tileNum, pixx, pixy, false)]);
                 g.fillRect(rc_x, rc_y, parent.scale, parent.scale);
                 rc_x += parent.scale;
             }
@@ -187,6 +190,7 @@ class GamePanel extends JPanel {
             rc_x = x;
         }
     }
+
     public void paintComponent(Graphics g) {
         int tilenum = 0;
         int xDraw = 0;
@@ -194,12 +198,11 @@ class GamePanel extends JPanel {
         super.paintComponent(g);
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 32 * 8 * parent.scale, 32 * 8 * parent.scale);
-
         for (int y = 0; y < 32; y++) {
             for (int x = 0; x < 32; x++) {
                 drawTile(g, (char) 0x8000, parent.ctx.bus_read((char) (0x9800 + tilenum)) & 0xFF, xDraw, yDraw);
                 g.setColor(parent.paletteAlt[3]);
-                g.drawRect(0, 0, 160 * parent.scale, 144 * parent.scale);
+                g.drawRect(parent.ctx.ioRegisters.backgroundViewportX * parent.scale, parent.ctx.ioRegisters.backgroundViewportY * parent.scale, 160 * parent.scale, 144 * parent.scale);
                 xDraw += (8 * parent.scale);
                 tilenum++;
             }

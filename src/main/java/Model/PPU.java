@@ -1,7 +1,5 @@
 package Model;
 
-import java.util.Scanner;
-
 public class PPU extends GBMemory {
     public Tile[] tiles = new Tile[384];
     public byte[] BackgroundMap = new byte[0x9FFF - 0x9800 + 1];
@@ -42,7 +40,17 @@ public class PPU extends GBMemory {
         }
     }
 
-    public byte getPixel(int tile, int x, int y) {
-        return tiles[tile].getPixel(7 - x, y);
+    public byte getPixel(int tile, int x, int y, boolean obj) {
+        if (obj)
+            return tiles[tile].getPixel(7 - x, y);
+        else {
+            if (ctx.ioRegisters.lcdControl.isBgTileUnsignedAddr())
+                if (tile >= 128)
+                    return tiles[tile].getPixel(7 - x, y);
+                else
+                    return tiles[tile + 256].getPixel(7 - x, y);
+            else
+                return tiles[tile].getPixel(7 - x, y);
+        }
     }
 }

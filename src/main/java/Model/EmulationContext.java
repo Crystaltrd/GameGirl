@@ -182,7 +182,7 @@ public class EmulationContext {
         }
     }
 
-    public void requestInterupt(InterruptSource src) {
+    public void requestInterrupt(InterruptSource src) {
         if (src == InterruptSource.IT_VBLANK) {
             ioRegisters.IFReg.setVBlankEnable(true);
         } else if (src == InterruptSource.IT_LCD_STAT) {
