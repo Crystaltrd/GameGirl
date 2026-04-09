@@ -22,10 +22,10 @@ public class CPUInstrsTests {
         String n = path.substring(0, 2);
         ProcessBuilder pb = new ProcessBuilder("python3", Objects.requireNonNull(getClass().getResource("/gameboy-doctor/gameboy-doctor")).getPath(), "-", "cpu_instrs", n);
         pb.redirectErrorStream(true);
-        File errFile = new File("logs/error" + n);
-        pb.redirectError(errFile);
-        File logFile = new File("logs/log" + n);
-        pb.redirectOutput(logFile);
+        // File errFile = new File("logs/error" + n);
+        //pb.redirectError(errFile);
+        //File logFile = new File("logs/log" + n);
+        //pb.redirectOutput(logFile);
         Process pr = pb.start();
 
         PrintStream processStream = new PrintStream(pr.getOutputStream());
