@@ -4,10 +4,12 @@ public class PPU extends GBMemory {
     public Tile[] tiles = new Tile[384];
     public byte[] BackgroundMap = new byte[0x9FFF - 0x9800 + 1];
     public ObjectAttributes[] objectAttributes = new ObjectAttributes[40];
+    public PPUStateMachine ppuStateMachine;
     private EmulationContext ctx;
 
     public PPU(EmulationContext ctx) {
         this.ctx = ctx;
+        ppuStateMachine = new PPUStateMachine(ctx);
         for (int i = 0; i < objectAttributes.length; i++) {
             objectAttributes[i] = new ObjectAttributes();
         }
@@ -17,6 +19,25 @@ public class PPU extends GBMemory {
         }
     }
 
+    public void tick() {
+        ppuStateMachine.setLineTicks(ppuStateMachine.getLineTicks() + 1);
+        switch (ppuStateMachine.getCurrState()) {
+            case STATE_OAM -> {
+                System.out.println("OAM");
+                ppuStateMachine.ppuModeOAM();
+            }
+            case STATE_XFER -> {
+                System.out.println("XFER");
+                ppuStateMachine.ppuModeXFER();
+            }
+            case STATE_HBLANK -> {
+                System.out.println("HBLANK");
+                ppuStateMachine.ppuModeHBlank();
+            }
+            case STATE_VBLANK -> {
+            }
+        }
+    }
     public byte read(char address) {
         if (address >= 0x8000 && address <= 0x97FF)
             return tiles[(address - 0x8000) / 16].getByte((address - 0x8000) % 16);

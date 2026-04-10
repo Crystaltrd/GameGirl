@@ -40,10 +40,7 @@ public class IORegisters extends GBMemory {
         else if (addr == HardwareRegisters.LCDC.addr)
             return lcdControl.getByte();
         else if (addr == HardwareRegisters.LY.addr)
-            if (emulator.gameboyDoctor)
                 return LY;
-            else
-                return LY++;
         else if (addr == HardwareRegisters.LYC.addr)
             return LYC;
         else if (addr == HardwareRegisters.SCY.addr)
@@ -72,8 +69,10 @@ public class IORegisters extends GBMemory {
             IFReg.setByte(val);
         else if (addr == HardwareRegisters.DMA.addr) {
             dmaRegister.start(val);
-        } else if (addr == HardwareRegisters.LCDC.addr)
+        } else if (addr == HardwareRegisters.LCDC.addr) {
             lcdControl.setByte(val);
+
+        }
         else if (addr == HardwareRegisters.LY.addr)
             return;
         else if (addr == HardwareRegisters.LYC.addr)

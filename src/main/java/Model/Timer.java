@@ -53,8 +53,8 @@ public class Timer extends GBMemory {
         if (timer_update && (tac & (1 << 2)) != 0) {
             tima++;
 
-            if (tima == 0xFF) {
-                tima = (char) tma;
+            if (tima > 0xFF) {
+                tima = (char) (tma & 0xFF);
                 ctx.requestInterrupt(InterruptSource.IT_TIMER);
             }
         }
