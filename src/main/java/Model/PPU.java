@@ -44,7 +44,7 @@ public class PPU extends GBMemory {
         if (obj)
             return tiles[tile].getPixel(7 - x, y);
         else {
-            if (ctx.ioRegisters.lcdControl.isBgTileUnsignedAddr())
+            if (ctx.ioRegisters.lcdControl.getBgTileDataArea() == LCDControl.windowTileDataAreaEnum.AREA88)
                 if (tile >= 128)
                     return tiles[tile].getPixel(7 - x, y);
                 else
