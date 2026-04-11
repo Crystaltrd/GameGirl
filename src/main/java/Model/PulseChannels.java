@@ -55,7 +55,13 @@ public class PulseChannels extends Channel {
     public void step(){
 
     }
-    public void write(char addr, int val){
+    public void write(char addr, byte val){
+        switch (addr) {
+            case ((char) HardwareRegisters.NR10.addr):
+                break;
+        }
+
+
 
     }
 

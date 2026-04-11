@@ -5,10 +5,10 @@ import java.util.Arrays;
 public class APU extends GBMemory {
     private final EmulationContext ctx;
 
-    private final Channel pulse1Channel = new Channel(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
-    private final Channel pulse2Channel = new Channel(HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
+    private final PulseChannels pulse1 = new PulseChannels(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
+    private final PulseChannels pulse2 = new PulseChannels(null,HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
     private final Channel waveChannel = new Channel(HardwareRegisters.NR30, HardwareRegisters.NR31, HardwareRegisters.NR32, HardwareRegisters.NR33, HardwareRegisters.NR34);
-    private final Channel noiseChannel = new Channel(HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
+    private final Channel noiseChannel = new Channel(null,HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
 
     private final byte[] regs = new byte[0x27];
     private final byte[] waveRam = new byte[0x10];
@@ -52,6 +52,11 @@ public class APU extends GBMemory {
             }
             return;
         }
+        if( a >= 0x10 && a<= 0x19){
+            if(a<= 0x14){pulse1.write(addr,val);}
+            else {pulse2.write(addr,val);}
+        }
+
         if (a < 0x10 || a > 0x26) {
             return;
         }
