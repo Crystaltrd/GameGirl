@@ -56,9 +56,9 @@ public class PulseChannels extends Channel {
 
     }
     public void write(char addr, byte val){
-        switch (addr) {
-            case ((char) HardwareRegisters.NR10.addr):
-                break;
+        if(addr == (char) HardwareRegisters.NR10.addr){
+
+
         }
 
 
