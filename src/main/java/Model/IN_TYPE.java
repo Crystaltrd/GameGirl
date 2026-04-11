@@ -1,5 +1,9 @@
 package Model;
 
+import java.util.EnumSet;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 public enum IN_TYPE {
     IN_ADC,
     IN_ADD,
@@ -57,5 +61,28 @@ public enum IN_TYPE {
     IN_STOP, // WONT IMPLEMENT
     IN_SUB,
     IN_SWAP,
-    IN_XOR,
+    IN_XOR;
+    static final Consumer<Emulator> NOP_CB = (ctx -> {
+    });
+    static final Consumer<Emulator> NONE_CB = (ctx -> {
+        System.err.printf("%02X %s Not Implemented Yet%n", ctx.getCpu().getCurrOpcode(), ctx.getCpu().getCurrInst().getInType());
+        System.exit(-5);
+    });
+
+    static final Consumer<Emulator> JP_CB = (ctx -> {
+        if (ctx.getCpu().checkCond()) {
+            ctx.getCpu().setPC(ctx.getCpu().getFetchData());
+            ctx.tick(1);
+        }
+    });
+
+    static {
+        for (final var val : EnumSet.allOf(IN_TYPE.class)) {
+            val.callBack = NONE_CB;
+        }
+        IN_JP.callBack = JP_CB;
+        IN_NOP.callBack = NOP_CB;
+    }
+
+    public Consumer<Emulator> callBack;
 }

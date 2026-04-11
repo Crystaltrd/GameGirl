@@ -43,10 +43,7 @@ public class CPU {
     public void fetchInstr() {
         currOpcode = context.read(PC++);
         currInst = InstructionSet.getInstr(currOpcode);
-        if (currInst.getInType() == IN_TYPE.IN_NONE) {
-            System.err.printf("Unknown Instruction: %02X\n", currOpcode);
-            System.exit(-1);
-        }
+        System.out.printf("Curr Instruction: %02X %s\n", currOpcode, currInst.getInType());
     }
 
     public void fetchParams() {
@@ -152,6 +149,7 @@ public class CPU {
     }
 
     public void execute() {
+        currInst.getInType().callBack.accept(context);
     }
 
     public boolean step() {
@@ -180,6 +178,27 @@ public class CPU {
             case RT_PC -> getPC();
             case RT_SP -> getSP();
             default -> 0;
+        };
+    }
+
+    public boolean checkCond(COND_TYPE condition) {
+        return switch (condition) {
+            case CT_C -> getCarryFlag();
+            case CT_NC -> !getCarryFlag();
+            case CT_NONE -> true;
+            case CT_NZ -> !getZeroFlag();
+            case CT_Z -> getZeroFlag();
+        };
+    }
+
+    public boolean checkCond() {
+        COND_TYPE condition = currInst.getCondType();
+        return switch (condition) {
+            case CT_C -> getCarryFlag();
+            case CT_NC -> !getCarryFlag();
+            case CT_NONE -> true;
+            case CT_NZ -> !getZeroFlag();
+            case CT_Z -> getZeroFlag();
         };
     }
 
