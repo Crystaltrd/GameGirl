@@ -15,12 +15,46 @@ public class Emulator {
     private Catridge catridge;
     private CPU cpu;
 
+    public void push(int val) {
+        cpu.setSP(cpu.getSP() - 1);
+        write(cpu.getSP(), val);
+    }
+
+    public int pop() {
+        int val = read(cpu.getSP());
+        cpu.setSP(cpu.getSP() + 1);
+        return val;
+    }
+
+    public void push16(int val) {
+        push((val >> 8) & 0xFF);
+        push(val & 0xFF);
+    }
+
+    public int pop16() {
+        int lo = pop();
+        int hi = pop();
+        return (hi << 8) | lo;
+    }
+
     public int read(int address) {
         address &= 0xFFFF;
         if (Commons.isBetween(address, 0x0000, 0x7FFF))
             return catridge.read(address);
+        System.err.printf("Reading from %04X failed\n", address);
         System.exit(-1);
         return 0;
+    }
+
+    public int read16(int address) {
+        int lo = read(address);
+        int hi = read(address + 1);
+        return lo | (hi << 8);
+    }
+
+    public void write16(int address, int value) {
+        write(address + 1, (value >> 8) & 0xFF);
+        write(address, value & 0xFF);
     }
 
     public void write(int address, int value) {

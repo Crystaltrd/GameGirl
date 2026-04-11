@@ -19,12 +19,12 @@ public class CPU {
     public static BitField CFlagMask = new BitField(0x10);
 
 
-    private int AF;
-    private int BC;
-    private int DE;
-    private int HL;
-    private int SP;
-    private int PC = 0x100;
+    private int AF = 0x01B0;
+    private int BC = 0x0013;
+    private int DE = 0x00D8;
+    private int HL = 0x014D;
+    private int SP = 0xFFFE;
+    private int PC = 0x0100;
 
     private int fetchData;
     private int memDest;
@@ -32,6 +32,7 @@ public class CPU {
     private boolean destIsMem;
 
     private boolean halted;
+    private boolean IME;
     private boolean stepping;
     private Instruction currInst;
 
@@ -43,7 +44,6 @@ public class CPU {
     public void fetchInstr() {
         currOpcode = context.read(PC++);
         currInst = InstructionSet.getInstr(currOpcode);
-        System.out.printf("Curr Instruction: %02X %s\n", currOpcode, currInst.getInType());
     }
 
     public void fetchParams() {
@@ -152,13 +152,11 @@ public class CPU {
         currInst.getInType().callBack.accept(context);
     }
 
-    public boolean step() {
-        if (!halted) {
-            fetchInstr();
-            fetchParams();
-            execute();
-        }
-        return true;
+    public static boolean is16bitReg(REG_TYPE regType) {
+        return switch (regType) {
+            case RT_A, RT_B, RT_C, RT_D, RT_E, RT_F, RT_H, RT_L, RT_NONE -> false;
+            case RT_AF, RT_SP, RT_BC, RT_DE, RT_HL, RT_PC -> true;
+        };
     }
 
     public int readReg(REG_TYPE regType) {
@@ -179,6 +177,37 @@ public class CPU {
             case RT_SP -> getSP();
             default -> 0;
         };
+    }
+
+    public boolean step() {
+        if (!halted) {
+            System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
+                    getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
+            fetchInstr();
+            fetchParams();
+            execute();
+        }
+        return true;
+    }
+
+    public void writeReg(REG_TYPE regType, int val) {
+        switch (regType) {
+            case RT_A -> setA(val);
+            case RT_AF -> setAF(val);
+            case RT_B -> setB(val);
+            case RT_BC -> setBC(val);
+            case RT_C -> setC(val);
+            case RT_D -> setD(val);
+            case RT_DE -> setDE(val);
+            case RT_E -> setE(val);
+            case RT_F -> setF(val);
+            case RT_H -> setH(val);
+            case RT_HL -> setHL(val);
+            case RT_L -> setL(val);
+            case RT_PC -> setPC(val);
+            case RT_SP -> setSP(val);
+        }
+        ;
     }
 
     public boolean checkCond(COND_TYPE condition) {
@@ -202,6 +231,16 @@ public class CPU {
         };
     }
 
+    public void gotoAddr(int addr, boolean pushPC) {
+        if (checkCond(currInst.getCondType())) {
+            if (pushPC) {
+                context.tick(2);
+                context.push16(getPC());
+            }
+            setPC(addr);
+            context.tick(1);
+        }
+    }
     public int getA() {
         return HighByte.getValue(AF);
     }
@@ -296,5 +335,16 @@ public class CPU {
 
     public void setCarryFlag(boolean val) {
         AF = CFlagMask.setBoolean(AF, val);
+    }
+
+    public void setFlags(int Z, int N, int H, int C) {
+        if (Z != -1)
+            setZeroFlag(Z == 1);
+        if (N != -1)
+            setSubtractFlag(N == 1);
+        if (H != -1)
+            setHalfCarryFlag(H == 1);
+        if (C != -1)
+            setCarryFlag(C == 1);
     }
 }
