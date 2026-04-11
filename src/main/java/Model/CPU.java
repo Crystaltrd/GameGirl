@@ -25,6 +25,7 @@ public class CPU {
     private int HL = 0x014D;
     private int SP = 0xFFFE;
     private int PC = 0x0100;
+    private int IE = 0x0000;
 
     private int fetchData;
     private int memDest;

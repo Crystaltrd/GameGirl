@@ -65,6 +65,10 @@ public enum IN_TYPE {
         ctx.getCpu().setIME(false);
     });
 
+    static final Consumer<Emulator> CP_CB = (ctx -> {
+        int n = ctx.getCpu().getA() - ctx.getCpu().getFetchData();
+        ctx.getCpu().setFlags(n == 0 ? 1 : 0, 1, (ctx.getCpu().getA() & 0x0F) - (ctx.getCpu().getFetchData() & 0x0F) < 0 ? 1 : 0, n < 0 ? 1 : 0);
+    });
     static final Consumer<Emulator> LD_CB = (ctx -> {
         if (ctx.getCpu().isDestIsMem()) {
             if (CPU.is16bitReg(ctx.getCpu().getCurrInst().getReg2())) {
@@ -135,6 +139,7 @@ public enum IN_TYPE {
         }
         ctx.getCpu().setFlags(val == 0 ? 0 : 1, 0, (val & 0x0F) == 0 ? 1 : 0, -1);
     });
+
     static {
         for (final var val : EnumSet.allOf(IN_TYPE.class)) {
             val.callBack = NONE_CB;
@@ -150,6 +155,7 @@ public enum IN_TYPE {
         IN_DEC.callBack = DEC_CB;
         IN_INC.callBack = INC_CB;
         IN_JR.callBack = JR_CB;
+        IN_CP.callBack = CP_CB;
     }
 
     public Consumer<Emulator> callBack;

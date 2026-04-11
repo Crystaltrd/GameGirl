@@ -14,6 +14,10 @@ public class Emulator {
 
     private Catridge catridge;
     private CPU cpu;
+    private PPU ppu;
+    private OAM oam;
+    private byte[] WRAM = new byte[0xE000 - 0xC000];
+    private byte[] ZeroPage = new byte[0xFFFF - 0xFF80];
 
     public void push(int val) {
         cpu.setSP(cpu.getSP() - 1);
@@ -41,6 +45,24 @@ public class Emulator {
         address &= 0xFFFF;
         if (Commons.isBetween(address, 0x0000, 0x7FFF))
             return catridge.read(address);
+        else if (Commons.isBetween(address, 0x8000, 0x9FFF))
+            return ppu.read(address);
+        else if (Commons.isBetween(address, 0xA000, 0xBFFF))
+            return 0; //TODO
+        else if (Commons.isBetween(address, 0xC000, 0xDFFF))
+            return WRAM[address - 0xC000] & 0xFF;
+        else if (Commons.isBetween(address, 0xE000, 0xFDFF))
+            return WRAM[address - 0xE000] & 0xFF;
+        else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
+            return oam.read(address);
+        else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
+            return 0;
+        else if (Commons.isBetween(address, 0xFF00, 0xFF7F))
+            return 0; //TODO IO
+        else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
+            return ZeroPage[address - 0xFF80] & 0xFF;
+        else if (address == 0xFFFF)
+            return cpu.getIE();
         System.err.printf("Reading from %04X failed\n", address);
         System.exit(-1);
         return 0;
@@ -60,6 +82,25 @@ public class Emulator {
     public void write(int address, int value) {
         if (Commons.isBetween(0x0000, 0x7FFF, address))
             catridge.write(address, value);
+        else if (Commons.isBetween(address, 0x8000, 0x9FFF))
+            ppu.write(address, value);
+        else if (Commons.isBetween(address, 0xA000, 0xBFFF))
+            return;
+        else if (Commons.isBetween(address, 0xC000, 0xDFFF))
+            WRAM[address - 0xC000] = (byte) value;
+        else if (Commons.isBetween(address, 0xE000, 0xFDFF))
+            WRAM[address - 0xE000] = (byte) value;
+        else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
+            oam.write(address, value);
+        else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
+            return;
+        else if (Commons.isBetween(address, 0xFF00, 0xFF7F))
+            return; //TODO IO
+        else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
+            ZeroPage[address - 0xFF80] = (byte) value;
+        else if (address == 0xFFFF)
+            cpu.setIE(value);
+
     }
 
     public void tick(int cycles) {
@@ -71,6 +112,8 @@ public class Emulator {
                 return 1;
             catridge = new Catridge(rom);
             cpu = new CPU(this);
+            ppu = new PPU(this);
+            oam = new OAM(this);
             while (running) {
                 if (paused) {
                     Thread.sleep(100);
