@@ -16,9 +16,10 @@ public class Emulator {
     private CPU cpu;
 
     public int read(int address) {
-        if (Commons.isBetween(0x0000, 0x7FFF, address))
+        address &= 0xFFFF;
+        if (Commons.isBetween(address, 0x0000, 0x7FFF))
             return catridge.read(address);
-        System.exit(-5);
+        System.exit(-1);
         return 0;
     }
 
@@ -27,18 +28,24 @@ public class Emulator {
             catridge.write(address, value);
     }
 
+    public void tick(int cycles) {
+    }
+
     public int run(InputStream rom) {
         try {
             if (rom == null)
                 return 1;
             catridge = new Catridge(rom);
-            cpu = new CPU();
+            cpu = new CPU(this);
             while (running) {
                 if (paused) {
                     Thread.sleep(100);
                     continue;
                 }
-
+                if (!cpu.step()) {
+                    System.out.println("CPU stopped");
+                    return 0;
+                }
                 ticks++;
             }
             return 0;

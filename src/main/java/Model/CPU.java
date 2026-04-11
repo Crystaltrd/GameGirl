@@ -1,12 +1,16 @@
 package Model;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang3.BitField;
+import Model.REG_TYPE.*;
 
 @Setter
 @Getter
 public class CPU {
+
+    private Emulator context;
     public static BitField lowByte = new BitField(0xFF);
     public static BitField HighByte = new BitField(0xFF00);
     public static BitField ZFlagMask = new BitField(0x80);
@@ -20,51 +24,195 @@ public class CPU {
     private int DE;
     private int HL;
     private int SP;
-    private int PC;
+    private int PC = 0x100;
 
     private int fetchData;
     private int memDest;
     private int currOpcode;
+    private boolean destIsMem;
 
     private boolean halted;
     private boolean stepping;
     private Instruction currInst;
 
+    CPU(Emulator context) {
+        this.context = context;
+
+    }
+
+    public void fetchInstr() {
+        currOpcode = context.read(PC++);
+        currInst = InstructionSet.getInstr(currOpcode);
+        if (currInst.getInType() == IN_TYPE.IN_NONE) {
+            System.err.printf("Unknown Instruction: %02X\n", currOpcode);
+            System.exit(-1);
+        }
+    }
+
+    public void fetchParams() {
+        memDest = 0;
+        destIsMem = false;
+        switch (currInst.getAddrMode()) {
+            case AM_D16_R, AM_A16_R -> {
+                int lo = context.read(PC);
+                context.tick(1);
+                int hi = context.read(PC + 1);
+                context.tick(1);
+                memDest = lo | (hi << 8);
+                destIsMem = true;
+                PC += 2;
+                fetchData = readReg(currInst.getReg2());
+            }
+            case AM_A8_R -> {
+                memDest = context.read(PC) | 0xFF00;
+                destIsMem = true;
+                context.tick(1);
+                PC++;
+            }
+            case AM_D8, AM_HL_SPR, AM_R_A8, AM_R_D8 -> {
+                fetchData = context.read(PC);
+                context.tick(1);
+                PC++;
+            }
+            case AM_MR -> {
+                memDest = readReg(currInst.getReg1());
+                destIsMem = true;
+                fetchData = context.read(readReg(currInst.getReg1()));
+                context.tick(1);
+            }
+            case AM_MR_D8 -> {
+                fetchData = context.read(PC);
+                context.tick(1);
+                PC++;
+                memDest = readReg(currInst.getReg1());
+                destIsMem = true;
+            }
+            case AM_R -> fetchData = readReg(currInst.getReg1());
+            case AM_R_A16 -> {
+                int lo = context.read(PC);
+                context.tick(1);
+                int hi = context.read(PC + 1);
+                context.tick(1);
+                int addr = lo | (hi << 8);
+                PC += 2;
+                fetchData = context.read(addr);
+                context.tick(1);
+            }
+            case AM_D16, AM_R_D16 -> {
+                int lo = context.read(PC);
+                context.tick(1);
+                int hi = context.read(PC + 1);
+                context.tick(1);
+                fetchData = lo | (hi << 8);
+                PC += 2;
+            }
+            case AM_HLD_R -> {
+                fetchData = readReg(currInst.getReg2());
+                memDest = readReg(currInst.getReg1());
+                destIsMem = true;
+                context.tick(1);
+                HL--;
+            }
+            case AM_HLI_R -> {
+                fetchData = readReg(currInst.getReg2());
+                memDest = readReg(currInst.getReg1());
+                destIsMem = true;
+                context.tick(1);
+                HL++;
+            }
+            case AM_R_HLD -> {
+                fetchData = context.read(readReg(currInst.getReg2()));
+                context.tick(1);
+                HL--;
+            }
+            case AM_R_HLI -> {
+                fetchData = context.read(readReg(currInst.getReg2()));
+                context.tick(1);
+                HL++;
+            }
+            case AM_MR_R -> {
+                fetchData = readReg(currInst.getReg2());
+                memDest = readReg(currInst.getReg1());
+                destIsMem = true;
+
+                if (currInst.getReg1() == REG_TYPE.RT_C) {
+                    memDest |= 0xFF00;
+                }
+            }
+            case AM_R_MR -> {
+                int addr = readReg(currInst.getReg2());
+                if (currInst.getReg2() == REG_TYPE.RT_C) {
+                    addr |= 0xFF00;
+                }
+                fetchData = context.read(addr);
+                context.tick(1);
+            }
+            case AM_R_R -> fetchData = readReg(currInst.getReg2());
+        }
+    }
+
+    public void execute() {
+    }
+
     public boolean step() {
+        if (!halted) {
+            fetchInstr();
+            fetchParams();
+            execute();
+        }
         return true;
     }
 
-
-    public void getA() {
-        AF = HighByte.getValue(AF);
+    public int readReg(REG_TYPE regType) {
+        return switch (regType) {
+            case RT_A -> getA();
+            case RT_AF -> getAF();
+            case RT_B -> getB();
+            case RT_BC -> getBC();
+            case RT_C -> getC();
+            case RT_D -> getD();
+            case RT_DE -> getDE();
+            case RT_E -> getE();
+            case RT_F -> getF();
+            case RT_H -> getH();
+            case RT_HL -> getHL();
+            case RT_L -> getL();
+            case RT_PC -> getPC();
+            case RT_SP -> getSP();
+            default -> 0;
+        };
     }
 
-    public void getF() {
-        AF = lowByte.getValue(AF);
+    public int getA() {
+        return HighByte.getValue(AF);
     }
 
-    public void getB() {
-        BC = HighByte.getValue(BC);
+    public int getF() {
+        return lowByte.getValue(AF);
     }
 
-    public void getC() {
-        BC = lowByte.getValue(BC);
+    public int getB() {
+        return HighByte.getValue(BC);
     }
 
-    public void getD() {
-        DE = HighByte.getValue(DE);
+    public int getC() {
+        return lowByte.getValue(BC);
     }
 
-    public void getE() {
-        DE = lowByte.getValue(DE);
+    public int getD() {
+        return HighByte.getValue(DE);
     }
 
-    public void getH() {
-        HL = HighByte.getValue(HL);
+    public int getE() {
+        return lowByte.getValue(DE);
     }
 
-    public void getL() {
-        HL = lowByte.getValue(HL);
+    public int getH() {
+        return HighByte.getValue(HL);
+    }
+
+    public int getL() {
+        return lowByte.getValue(HL);
     }
 
     public void setA(int val) {
