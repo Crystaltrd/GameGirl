@@ -1,23 +1,11 @@
-import Model.EmulationContext;
-import Vue.EmulatorView;
+import Model.Emulator;
 
-import java.util.Scanner;
+import java.io.InputStream;
 
 public class Main {
     public static void main(String[] args) {
-        try {
-            EmulationContext emulator;
-            if (args.length > 0) {
-                emulator = new EmulationContext(Main.class.getResourceAsStream(args[0]), false, true, false);
-            } else {
-                emulator = new EmulationContext(Main.class.getResourceAsStream("/ROMs/tetris.gb"), false, false, true);
-            }
-            EmulatorView emulatorView = new EmulatorView(emulator);
-            while (emulator.emuStep()) {
-                emulatorView.update();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Emulator emulator = new Emulator();
+        InputStream romFile = Main.class.getResourceAsStream("/ROMs/tetris.gb");
+        System.exit(emulator.run(romFile));
     }
 }
