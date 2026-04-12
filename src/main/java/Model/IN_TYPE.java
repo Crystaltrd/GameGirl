@@ -279,6 +279,28 @@ public enum IN_TYPE {
         ctx.getCpu().setA(ctx.getCpu().getA() | (carry << 7));
         ctx.getCpu().setFlags(0, 0, 0, newCarry);
     });
+
+    static final Consumer<Emulator> RRCA_CB = (ctx -> {
+        byte carry = (byte) (ctx.getCpu().getA() & 1);
+        ctx.getCpu().setA(ctx.getCpu().getA() >> 1);
+        ctx.getCpu().setA(ctx.getCpu().getA() | (carry << 7));
+        ctx.getCpu().setFlags(0, 0, 0, carry);
+    });
+
+    static final Consumer<Emulator> RLA_CB = (ctx -> {
+        byte u = (byte) ctx.getCpu().getA();
+        int c = (u >> 7) & 1;
+        u = (byte) ((u << 1) | (ctx.getCpu().getCarryFlag() ? 1 : 0));
+        ctx.getCpu().setA(u);
+        ctx.getCpu().setFlags(0, 0, 0, c);
+    });
+    static final Consumer<Emulator> RLCA_CB = (ctx -> {
+        byte u = (byte) ctx.getCpu().getA();
+        int c = (u >> 7) & 1;
+        u = (byte) ((u << 1) | c);
+        ctx.getCpu().setA(u);
+        ctx.getCpu().setFlags(0, 0, 0, c);
+    });
     static final Consumer<Emulator> PREFIX_CB = (ctx -> {
         int op = ctx.getCpu().getFetchData();
         REG_TYPE regType = REG_TYPE.decodeReg(op & 0b111);
@@ -424,10 +446,10 @@ public enum IN_TYPE {
         IN_PUSH.callBack = PUSH_CB;
         IN_RET.callBack = RET_CB;
         IN_RETI.callBack = RETI_CB;
-        IN_RLA.callBack = NONE_CB; //TODO
-        IN_RLCA.callBack = NONE_CB; //TODO
+        IN_RLA.callBack = RLA_CB;
+        IN_RLCA.callBack = RLCA_CB;
         IN_RRA.callBack = RRA_CB;
-        IN_RRCA.callBack = NONE_CB; //TODO
+        IN_RRCA.callBack = RRCA_CB;
         IN_RST.callBack = RST_CB;
         IN_SBC.callBack = SBC_CB;
         IN_SCF.callBack = SCF_CB;

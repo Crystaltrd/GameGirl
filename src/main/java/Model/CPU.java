@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.BitField;
 import Model.REG_TYPE.*;
 
+
 @Setter
 @Getter
 public class CPU {
@@ -19,6 +20,14 @@ public class CPU {
     public static BitField HFlagMask = new BitField(0x20);
     public static BitField CFlagMask = new BitField(0x10);
 
+    public static BitField VBlankMask = new BitField(0x1);
+    public static BitField LCDStatMask = new BitField(0x2);
+    public static BitField TimerMask = new BitField(0x4);
+    public static BitField SerialMask = new BitField(0x8);
+    public static BitField JoypadMask = new BitField(0x10);
+
+    public static BitField InterruptRequested = new BitField(0x1F);
+
 
     private int AF = 0x01B0;
     private int BC = 0x0013;
@@ -27,6 +36,7 @@ public class CPU {
     private int SP = 0xFFFE;
     private int PC = 0x0100;
     private int IE = 0x0000;
+    private int IF = 0x0000;
 
     private int fetchData;
     private int memDest;
@@ -187,17 +197,19 @@ public class CPU {
 
     public boolean step() {
         if (!halted) {
-            System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
-                    getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
+            System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
             fetchInstr();
             fetchParams();
 
             execute();
         } else {
             context.tick(1);
+            if (interruptRequested()) {
+                halted = false;
+            }
         }
         if (IME) {
-            // Handle Interrupts
+            handleInterrupts();
             enablingIME = false;
         }
         if (enablingIME) {
@@ -355,14 +367,127 @@ public class CPU {
         AF = CFlagMask.setBoolean(AF, val);
     }
 
+    public void setVBlankInt(boolean requested) {
+        IF = VBlankMask.setBoolean(IF, requested);
+    }
+
+    public void setLCDStatInt(boolean requested) {
+        IF = LCDStatMask.setBoolean(IF, requested);
+    }
+
+    public void setTimerInt(boolean requested) {
+        IF = TimerMask.setBoolean(IF, requested);
+    }
+
+    public void setSerialInt(boolean requested) {
+        IF = SerialMask.setBoolean(IF, requested);
+    }
+
+    public void setJoypadInt(boolean requested) {
+        IF = JoypadMask.setBoolean(IF, requested);
+    }
+
+    public void enableVBlankInts() {
+        IE = VBlankMask.setBoolean(IE, true);
+    }
+
+    public void enableLCDStatInts() {
+        IE = LCDStatMask.setBoolean(IE, true);
+    }
+
+    public void enableTimerInts() {
+        IE = TimerMask.setBoolean(IE, true);
+    }
+
+    public void enableSerialInts() {
+        IE = SerialMask.setBoolean(IE, true);
+    }
+
+    public void enableJoypadInts() {
+        IE = JoypadMask.setBoolean(IE, true);
+    }
+
+    public boolean isVBlankIntsEnabled() {
+        return VBlankMask.isSet(IE);
+    }
+
+    public boolean isLCDStatIntsEnabled() {
+        return LCDStatMask.isSet(IE);
+    }
+
+    public boolean isTimerIntsEnabled() {
+        return TimerMask.isSet(IE);
+    }
+
+    public boolean isSerialIntsEnabled() {
+        return SerialMask.isSet(IE);
+    }
+
+    public boolean isJoypadIntsEnabled() {
+        return JoypadMask.isSet(IE);
+    }
+
+    public boolean interruptRequested() {
+        return InterruptRequested.isSet(IF);
+    }
+
+    public boolean isVBlankIntRequested() {
+        return VBlankMask.isSet(IF);
+    }
+
+    public boolean isLCDStatIntRequested() {
+        return LCDStatMask.isSet(IF);
+    }
+
+    public boolean isTimerIntRequested() {
+        return TimerMask.isSet(IF);
+    }
+
+    public boolean isSerialIntRequested() {
+        return SerialMask.isSet(IF);
+    }
+
+    public boolean isJoypadIntRequested() {
+        return JoypadMask.isSet(IF);
+    }
+
+    public void handleInterrupts() {
+        if (isVBlankIntsEnabled() && isVBlankIntRequested()) {
+            context.push16(PC);
+            PC = 0x40;
+            setVBlankInt(false);
+            halted = false;
+            IME = false;
+        } else if (isLCDStatIntsEnabled() && isLCDStatIntRequested()) {
+            context.push16(PC);
+            PC = 0x48;
+            setLCDStatInt(false);
+            halted = false;
+            IME = false;
+        } else if (isTimerIntsEnabled() && isTimerIntRequested()) {
+            context.push16(PC);
+            PC = 0x50;
+            setTimerInt(false);
+            halted = false;
+            IME = false;
+        } else if (isSerialIntsEnabled() && isSerialIntRequested()) {
+            context.push16(PC);
+            PC = 0x58;
+            setSerialInt(false);
+            halted = false;
+            IME = false;
+        } else if (isJoypadIntsEnabled() && isJoypadIntRequested()) {
+            context.push16(PC);
+            PC = 0x60;
+            setJoypadInt(false);
+            halted = false;
+            IME = false;
+        }
+    }
     public void setFlags(int Z, int N, int H, int C) {
-        if (Z != -1)
-            setZeroFlag(Z == 1);
-        if (N != -1)
-            setSubtractFlag(N == 1);
-        if (H != -1)
-            setHalfCarryFlag(H == 1);
-        if (C != -1)
-            setCarryFlag(C == 1);
+        if (Z != -1) setZeroFlag(Z == 1);
+        if (N != -1) setSubtractFlag(N == 1);
+        if (H != -1) setHalfCarryFlag(H == 1);
+        if (C != -1) setCarryFlag(C == 1);
     }
 }
