@@ -18,10 +18,7 @@ public class CPUInstrsTests {
             "06-ld r,r", "07-jr,jp,call,ret,rst", "08-misc instrs", "09-op r,r", "10-bit ops", "11-op a,(hl)"
     })
     public void cpuInstrsTest(String path) throws IOException {
-        Emulator emulator = new Emulator();
-        InputStream romFile = getClass().getResourceAsStream(prefix + path + ".gb");
-        assertEquals(0, emulator.run(romFile));
-        /*PrintStream stdout = System.out;
+        PrintStream stdout = System.out;
         String n = path.substring(0, 2);
         ProcessBuilder pb = new ProcessBuilder("python", Objects.requireNonNull(getClass().getResource("/gameboy-doctor/gameboy-doctor")).getPath(), "-", "cpu_instrs", n);
         pb.redirectErrorStream(true);
@@ -31,15 +28,14 @@ public class CPUInstrsTests {
         pb.redirectOutput(logFile);
         Process pr = pb.start();
 
+
         PrintStream processStream = new PrintStream(pr.getOutputStream());
-        System.setOut(processStream);*/
-//        EmulationContext emulator = new EmulationContext(getClass().getResourceAsStream(prefix + path + ".gb"), true, false, false);
-//        while (emulator.emuStep()) {
-//            if (!pr.isAlive())
-//                break;
-//        }
-/*        System.setOut(stdout);
-        assertEquals(0, pr.exitValue());*/
+        System.setOut(processStream);
+        Emulator emulator = new Emulator(pr);
+        InputStream romFile = getClass().getResourceAsStream(prefix + path + ".gb");
+        emulator.run(romFile);
+        System.setOut(stdout);
+        assertEquals(0, pr.exitValue());
     }
 
 }

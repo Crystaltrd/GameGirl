@@ -8,16 +8,18 @@ import java.io.InputStream;
 @Setter
 @Getter
 public class Emulator {
+    private Process process = null;
     private boolean paused = false;
     private boolean running = true;
+    private boolean emergency = false;
     private long ticks = 0;
 
     private Catridge catridge;
     private CPU cpu;
     private PPU ppu;
     private OAM oam;
-    private byte[] WRAM = new byte[0xE000 - 0xC000];
-    private byte[] ZeroPage = new byte[0xFFFF - 0xFF80];
+    private byte[] WRAM = new byte[0x2000];
+    private byte[] ZeroPage = new byte[0x80];
 
     public void push(int val) {
         cpu.setSP(cpu.getSP() - 1);
@@ -41,6 +43,27 @@ public class Emulator {
         return (hi << 8) | lo;
     }
 
+    public Emulator(Process pr) {
+        process = pr;
+    }
+
+    public int read16(int address) {
+        int lo = read(address);
+        int hi = read(address + 1);
+        return lo | (hi << 8);
+    }
+
+    public void write16(int address, int value) {
+        write(address + 1, (value >> 8) & 0xFF);
+        write(address, value & 0xFF);
+    }
+
+    public Emulator() {
+    }
+
+    public void tick(int cycles) {
+    }
+
     public int read(int address) {
         address &= 0xFFFF;
         if (Commons.isBetween(address, 0x0000, 0x7FFF))
@@ -57,26 +80,15 @@ public class Emulator {
             return oam.read(address);
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return 0;
-        else if (Commons.isBetween(address, 0xFF00, 0xFF7F))
-            return 0; //TODO IO
-        else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
+        else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
+            return 0x90; //TODO IO
+        } else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
             return ZeroPage[address - 0xFF80] & 0xFF;
         else if (address == 0xFFFF)
             return cpu.getIE();
         System.err.printf("Reading from %04X failed\n", address);
         System.exit(-1);
         return 0;
-    }
-
-    public int read16(int address) {
-        int lo = read(address);
-        int hi = read(address + 1);
-        return lo | (hi << 8);
-    }
-
-    public void write16(int address, int value) {
-        write(address + 1, (value >> 8) & 0xFF);
-        write(address, value & 0xFF);
     }
 
     public void write(int address, int value) {
@@ -94,16 +106,15 @@ public class Emulator {
             oam.write(address, value);
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return;
-        else if (Commons.isBetween(address, 0xFF00, 0xFF7F))
+        else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
+
             return; //TODO IO
+        }
         else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
             ZeroPage[address - 0xFF80] = (byte) value;
         else if (address == 0xFFFF)
             cpu.setIE(value);
 
-    }
-
-    public void tick(int cycles) {
     }
 
     public int run(InputStream rom) {
@@ -115,6 +126,10 @@ public class Emulator {
             ppu = new PPU(this);
             oam = new OAM(this);
             while (running) {
+                if (process != null && !process.isAlive())
+                    return 0;
+                if (emergency)
+                    return 1;
                 if (paused) {
                     Thread.sleep(100);
                     continue;

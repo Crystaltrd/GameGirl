@@ -192,6 +192,7 @@ public class CPU {
     }
 
     public void writeReg(REG_TYPE regType, int val) {
+        val &= 0xFFFF;
         switch (regType) {
             case RT_A -> setA(val);
             case RT_AF -> setAF(val);
@@ -242,6 +243,7 @@ public class CPU {
             context.tick(1);
         }
     }
+
     public int getA() {
         return HighByte.getValue(AF);
     }
