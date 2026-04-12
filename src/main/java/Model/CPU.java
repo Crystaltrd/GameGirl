@@ -1,5 +1,6 @@
 package Model;
 
+import com.sun.jdi.event.BreakpointEvent;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -34,6 +35,7 @@ public class CPU {
 
     private boolean halted;
     private boolean IME;
+    private boolean enablingIME;
     private boolean stepping;
     private Instruction currInst;
 
@@ -71,6 +73,9 @@ public class CPU {
                 fetchData = context.read(PC);
                 context.tick(1);
                 PC++;
+            }
+            case AM_IMP -> {
+                return;
             }
             case AM_MR -> {
                 memDest = readReg(currInst.getReg1());
@@ -186,7 +191,17 @@ public class CPU {
                     getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
             fetchInstr();
             fetchParams();
+
             execute();
+        } else {
+            context.tick(1);
+        }
+        if (IME) {
+            // Handle Interrupts
+            enablingIME = false;
+        }
+        if (enablingIME) {
+            IME = true;
         }
         return true;
     }

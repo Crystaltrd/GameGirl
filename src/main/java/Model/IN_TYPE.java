@@ -28,7 +28,6 @@ public enum IN_TYPE {
     IN_POP,
     IN_PREFIX,
     IN_PUSH,
-    IN_RES,
     IN_RET,
     IN_RETI,
     IN_RLA,
@@ -70,8 +69,6 @@ public enum IN_TYPE {
         ctx.getCpu().setFlags(n == 0 ? 1 : 0, 1, (ctx.getCpu().getA() & 0x0F) - (ctx.getCpu().getFetchData() & 0x0F) < 0 ? 1 : 0, n < 0 ? 1 : 0);
     });
     static final Consumer<Emulator> LD_CB = (ctx -> {
-        if (ctx.getCpu().getCurrOpcode() == 0xF8 && ctx.getCpu().getFetchData() == 0xFF)
-            ctx.tick(1);
         if (ctx.getCpu().isDestIsMem()) {
             if (CPU.is16bitReg(ctx.getCpu().getCurrInst().getReg2())) {
                 ctx.tick(1);
@@ -127,7 +124,18 @@ public enum IN_TYPE {
             ctx.tick(1);
         }
     });
+    static final Consumer<Emulator> RETI_CB = (ctx -> {
+        ctx.getCpu().setIME(true);
+        RET_CB.accept(ctx);
+    });
 
+    static final Consumer<Emulator> HALT_CB = (ctx -> {
+        ctx.getCpu().setHalted(true);
+    });
+
+    static final Consumer<Emulator> EI_CB = (ctx -> {
+        ctx.getCpu().setEnablingIME(true);
+    });
     static final Consumer<Emulator> POP_CB = (ctx -> {
         int lo = ctx.pop();
         ctx.tick(1);
@@ -146,6 +154,19 @@ public enum IN_TYPE {
         ctx.tick(1);
         ctx.push(lo);
         ctx.tick(1);
+    });
+
+    static final Consumer<Emulator> CCF_CB = (ctx -> {
+        ctx.getCpu().setFlags(-1, 0, 0, ctx.getCpu().getCarryFlag() ? 0 : 1);
+    });
+
+    static final Consumer<Emulator> SCF_CB = (ctx -> {
+        ctx.getCpu().setFlags(-1, 0, 0, 1);
+    });
+
+    static final Consumer<Emulator> CPL_CB = (ctx -> {
+        ctx.getCpu().setA(~ctx.getCpu().getA());
+        ctx.getCpu().setFlags(-1, 1, 1, -1);
     });
     static final Consumer<Emulator> JP_CB = (ctx -> {
         ctx.getCpu().gotoAddr(ctx.getCpu().getFetchData(), false);
@@ -181,9 +202,21 @@ public enum IN_TYPE {
         if ((ctx.getCpu().getCurrOpcode() & 0x03) == 0x03) {
             return;
         }
-        ctx.getCpu().setFlags(val == 0 ? 1 : 0, 0, (val & 0x0F) == 0 ? 1 : 0, -1);
+        ctx.getCpu().setFlags((val & 0xFF) == 0 ? 1 : 0, 0, (val & 0x0F) == 0 ? 1 : 0, -1);
     });
 
+
+    static final Consumer<Emulator> SBC_CB = (ctx -> {
+        int val = (ctx.getCpu().getFetchData() + (ctx.getCpu().getCarryFlag() ? 1 : 0)) & 0xFF;
+        int z = (((ctx.getCpu().readReg(ctx.getCpu().getCurrInst().getReg1()) - val) & 0xFF) == 0) ? 1 : 0;
+        int h = ((ctx.getCpu().readReg(ctx.getCpu().getCurrInst().getReg1()) & 0xF)
+                - (ctx.getCpu().getFetchData() & 0xF) - (ctx.getCpu().getCarryFlag() ? 1 : 0)) < 0 ? 1 : 0;
+        int c = ((ctx.getCpu().readReg(ctx.getCpu().getCurrInst().getReg1()))
+                - (ctx.getCpu().getFetchData()) - (ctx.getCpu().getCarryFlag() ? 1 : 0)) < 0 ? 1 : 0;
+
+        ctx.getCpu().writeReg(ctx.getCpu().getCurrInst().getReg1(), ctx.getCpu().readReg(ctx.getCpu().getCurrInst().getReg1()) - val);
+        ctx.getCpu().setFlags(z, 1, h, c);
+    });
     static final Consumer<Emulator> SUB_CB = (ctx -> {
         char val = (char) (ctx.getCpu().readReg(ctx.getCpu().getCurrInst().getReg1()) - ctx.getCpu().getFetchData());
         int z = val == 0 ? 1 : 0;
@@ -226,6 +259,19 @@ public enum IN_TYPE {
         ctx.getCpu().setFlags(z, 0, h, c);
     });
 
+    static final Consumer<Emulator> DAA_CB = (ctx -> {
+        byte u = 0;
+        int fc = 0;
+        if (ctx.getCpu().getHalfCarryFlag() || (!ctx.getCpu().getSubtractFlag() && (ctx.getCpu().getA() & 0xF) > 9))
+            u = 6;
+
+        if (ctx.getCpu().getCarryFlag() || (!ctx.getCpu().getSubtractFlag() && ctx.getCpu().getA() > 0x99)) {
+            u |= 0x60;
+            fc = 1;
+        }
+        ctx.getCpu().setA(ctx.getCpu().getA() + (ctx.getCpu().getSubtractFlag() ? -u : u));
+        ctx.getCpu().setFlags(ctx.getCpu().getA() == 0 ? 1 : 0, -1, 0, fc);
+    });
     static final Consumer<Emulator> RRA_CB = (ctx -> {
         int carry = ctx.getCpu().getCarryFlag() ? 1 : 0;
         int newCarry = ctx.getCpu().getA() & 1;
@@ -280,7 +326,6 @@ public enum IN_TYPE {
             case 1 -> {
                 byte old = (byte) reg_val;
                 reg_val >>= 1;
-                reg_val &= 0x80;
                 reg_val |= (old << 7);
 
                 if (regType == REG_TYPE.RT_HL)
@@ -355,13 +400,18 @@ public enum IN_TYPE {
         for (final var val : EnumSet.allOf(IN_TYPE.class)) {
             val.callBack = NONE_CB;
         }
-        IN_AND.callBack = AND_CB;
-        IN_ADD.callBack = ADD_CB;
         IN_ADC.callBack = ADC_CB;
+        IN_ADD.callBack = ADD_CB;
+        IN_AND.callBack = AND_CB;
         IN_CALL.callBack = CALL_CB;
+        IN_CCF.callBack = CCF_CB;
         IN_CP.callBack = CP_CB;
+        IN_CPL.callBack = CPL_CB;
+        IN_DAA.callBack = DAA_CB;
         IN_DEC.callBack = DEC_CB;
         IN_DI.callBack = DI_CB;
+        IN_EI.callBack = EI_CB;
+        IN_HALT.callBack = HALT_CB;
         IN_INC.callBack = INC_CB;
         IN_JP.callBack = JP_CB;
         IN_JR.callBack = JR_CB;
@@ -370,13 +420,20 @@ public enum IN_TYPE {
         IN_NOP.callBack = NOP_CB;
         IN_OR.callBack = OR_CB;
         IN_POP.callBack = POP_CB;
+        IN_PREFIX.callBack = PREFIX_CB;
         IN_PUSH.callBack = PUSH_CB;
         IN_RET.callBack = RET_CB;
+        IN_RETI.callBack = RETI_CB;
+        IN_RLA.callBack = NONE_CB; //TODO
+        IN_RLCA.callBack = NONE_CB; //TODO
         IN_RRA.callBack = RRA_CB;
+        IN_RRCA.callBack = NONE_CB; //TODO
         IN_RST.callBack = RST_CB;
+        IN_SBC.callBack = SBC_CB;
+        IN_SCF.callBack = SCF_CB;
+        IN_STOP.callBack = NOP_CB; // WONT IMPLEMENT
         IN_SUB.callBack = SUB_CB;
         IN_XOR.callBack = XOR_CB;
-        IN_PREFIX.callBack = PREFIX_CB;
     }
 
     public Consumer<Emulator> callBack;

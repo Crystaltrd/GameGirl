@@ -21,6 +21,9 @@ public class Emulator {
     private byte[] WRAM = new byte[0x2000];
     private byte[] ZeroPage = new byte[0x80];
 
+    public StringBuilder dbg_msg = new StringBuilder();
+    private byte readReady = 0;
+
     public void push(int val) {
         cpu.setSP(cpu.getSP() - 1);
         write(cpu.getSP(), val);
@@ -63,6 +66,7 @@ public class Emulator {
 
     public void tick(int cycles) {
     }
+    private byte currchar = 0;
 
     public int read(int address) {
         address &= 0xFFFF;
@@ -81,6 +85,10 @@ public class Emulator {
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return 0;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
+            if (address == 0xFF02)
+                return readReady;
+            if (address == 0xFF01)
+                return currchar;
             return 0x90; //TODO IO
         } else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
             return ZeroPage[address - 0xFF80] & 0xFF;
@@ -98,24 +106,37 @@ public class Emulator {
             ppu.write(address, value);
         else if (Commons.isBetween(address, 0xA000, 0xBFFF))
             return;
-        else if (Commons.isBetween(address, 0xC000, 0xDFFF))
+        else if (Commons.isBetween(address, 0xC000, 0xDFFF)) {
             WRAM[address - 0xC000] = (byte) value;
-        else if (Commons.isBetween(address, 0xE000, 0xFDFF))
+        } else if (Commons.isBetween(address, 0xE000, 0xFDFF))
             WRAM[address - 0xE000] = (byte) value;
         else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
             oam.write(address, value);
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
-
+            if (address == 0xFF02)
+                readReady = (byte) value;
+            if (address == 0xFF01)
+                currchar = (byte) value;
             return; //TODO IO
-        }
-        else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
+        } else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
             ZeroPage[address - 0xFF80] = (byte) value;
         else if (address == 0xFFFF)
             cpu.setIE(value);
 
     }
+
+    public void dbg_update() {
+        if (read((char) 0xFF02) != 0) {
+            char c = (char) read((char) 0xFF01);
+            dbg_msg.append(c);
+            write((char) 0xFF02, (byte) 0);
+            System.out.println("DBG: " + dbg_msg);
+        }
+    }
+
+    
 
     public int run(InputStream rom) {
         try {
@@ -126,6 +147,7 @@ public class Emulator {
             ppu = new PPU(this);
             oam = new OAM(this);
             while (running) {
+                // dbg_update();
                 if (process != null && !process.isAlive())
                     return 0;
                 if (emergency)
