@@ -1,7 +1,7 @@
 package Model;
 
 public class PulseChannels extends Channel {
-    private HardwareRegisters[] channelRegisters;
+    private final HardwareRegisters[] channelRegisters;
     //a initialiser dans write();
     private int periodValue;
     private int initialVolume;
@@ -22,7 +22,6 @@ public class PulseChannels extends Channel {
 
 
 
-    private int lowPeriod;
     private int[][] dutyCycles = {
             {0, 0, 0, 0, 0, 0, 0, 1},
             {0, 0, 0, 0, 0, 0, 1, 1},
@@ -36,7 +35,7 @@ public class PulseChannels extends Channel {
         this.channelRegisters = reg.clone();
     }
     public boolean isEnabled(){ return this.Enable;    }
-    public boolean isDacEnabled(){return (channelRegisters[1].addr & 0xF8) != 0;}
+//    public boolean isDacEnabled(){return (channelRegisters[1].addr & 0xF8) != 0;}
 
     public void trigger(){
         this.Enable = true;
@@ -73,16 +72,16 @@ public class PulseChannels extends Channel {
             this.initialVolume = (val >> 4) & 0x0F;
             this.currVolume = this.initialVolume;
             this.enveloppeDir = (short) ((val >> 5 ) & 0x01);
-            this.envelopPeriod = (short) ((val & 0x07)*64); // 6 7
-            if(this.initialVolume == 0 && this.enveloppeDir == 0){ isDacEnable = false;}
+            this.envelopPeriod = (short) (val & 0x07) ;
+            this.isDacEnable = (val & 0xF8) != 0;
         }
         else if((addr == (char) HardwareRegisters.NR13.addr) || addr == (char) HardwareRegisters.NR23.addr){
-            this.periodValue = ((val & 0xFF) << 3) | (lowPeriod & 0xFF);
+            this.periodValue = (this.periodValue & 0x0700) | (val & 0xFF);
             this.sampleRate = (double) (1_048_576) /(2048-this.periodValue);
         }
         else if((addr == (char) HardwareRegisters.NR14.addr) || addr == (char) HardwareRegisters.NR24.addr){
-            this.lowPeriod = (val & 0x07);
-            if((this.lengthEnabled = (val >> 6) & 0x01) == 1){this.lengthCounter--;}
+            this.periodValue = (this.periodValue & 0x00FF) | ((val & 0x07) << 8);
+            if((this.lengthEnabled = (val >> 6) & 0x01) == 1) {this.lengthCounter--;}
             if(((val >> 7 ) & 0x01) == 1){trigger();}
         }
 
