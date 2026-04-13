@@ -49,9 +49,7 @@ public class Emulator {
         return (hi << 8) | lo;
     }
 
-    public Emulator(Process pr) {
-        process = pr;
-    }
+
 
     public int read16(int address) {
         int lo = read(address);
@@ -72,6 +70,12 @@ public class Emulator {
         timer = new Timer(this);
     }
 
+    public Emulator(Process pr) {
+        cpu = new CPU(this);
+        ppu = new PPU(this);
+        timer = new Timer(this);
+        process = pr;
+    }
     private byte currchar = 0;
 
     public void tick(int cycles) {
