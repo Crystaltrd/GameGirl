@@ -1,9 +1,12 @@
 package Model;
 
+import Controller.LookAndFeelController;
 import Vue.GameView;
 import Vue.TileView;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Arrays;
 
 @Setter
 @Getter
@@ -20,17 +23,38 @@ public class PPU extends BusMemory {
     private int lineTicks;
     public int[] framebuffer = new int[YRES * XRES * 2];
     private PPUStateMachine stateMachine;
-    
+
     PPU(Emulator context) {
         this.context = context;
         stateMachine = new PPUStateMachine(context);
         for (int i = 0; i < oam.length; i++) {
             oam[i] = new OAMEntry();
         }
+        blankScreen();
+    }
+
+    public void disableLCD() {
+        lineTicks = 0;
+        stateMachine.resetFetcher();
+        context.getIoRegisters().getLcd().setLY(0);
+        context.getIoRegisters().updateLYCompare();
+        context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_HBLANK);
+        blankScreen();
+    }
+
+    public void enableLCD() {
+        lineTicks = 0;
+        stateMachine.resetFetcher();
+        context.getIoRegisters().getLcd().setLY(0);
+        context.getIoRegisters().updateLYCompare();
+        context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_OAM);
+    }
+
+    private void blankScreen() {
+        Arrays.fill(framebuffer, LookAndFeelController.defaultPalette[0]);
     }
 
     public void tick() {
-        lineTicks++;
         TileView tileDisplay = context.getTileMapRenderer();
         GameView gameDisplay = context.getGameRenderer();
         if (tileDisplay != null) {
@@ -39,6 +63,10 @@ public class PPU extends BusMemory {
         if (gameDisplay != null) {
             gameDisplay.repaint();
         }
+        if (!context.getIoRegisters().getLcd().getLCDPPUEnabled()) {
+            return;
+        }
+        lineTicks++;
         switch (context.getIoRegisters().getLcd().getPPUMode()) {
             case MODE_HBLANK -> {
                 stateMachine.processHBLANK();

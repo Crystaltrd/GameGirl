@@ -54,6 +54,14 @@ public class LCD {
         setPPUMode(RENDER_MODE.MODE_OAM);
     }
 
+    public int getSTAT() {
+        return STAT | 0x80;
+    }
+
+    public void writeSTAT(int value) {
+        STAT = (STAT & 0x07) | (value & 0xF8);
+    }
+
     public void updatePalette(int val, int pal) {
         int col0 = ColorID0Mask.getValue(val);
         int col1 = ColorID1Mask.getValue(val);
@@ -65,6 +73,7 @@ public class LCD {
                 bgColors[1] = LookAndFeelController.defaultPalette[col1];
                 bgColors[2] = LookAndFeelController.defaultPalette[col2];
                 bgColors[3] = LookAndFeelController.defaultPalette[col3];
+                BGPalette = val;
                 break;
             case 1:
                 sp1Colors[0] = LookAndFeelController.defaultPalette[0];

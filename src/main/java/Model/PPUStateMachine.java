@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayDeque;
+import java.util.Deque;
 
 @Setter
 @Getter
@@ -13,74 +14,80 @@ public class PPUStateMachine {
     public static long startTimer;
     public static long frameCount;
     private final Emulator context;
-    private ArrayDeque<Integer> pixelQueue = new ArrayDeque<>();
+    private final Deque<Integer> bgPixelFifo = new ArrayDeque<>();
     private FETCH_STATE currFetchState = FETCH_STATE.FS_TILE;
-    private int lineX;
     private int pushedX;
     private int fetchX;
-    private int[] BGWFetchData = new int[3];
-    private int[] FetchEntryData = new int[6];
-    private int mapY;
-    private int mapX;
-    private int tileY;
-    private int fifoX;
+    private int discardPixels;
+    private int tileIndex;
+    private int tileDataLo;
+    private int tileDataHi;
 
     PPUStateMachine(Emulator context) {
         this.context = context;
     }
 
+    public void resetFetcher() {
+        bgPixelFifo.clear();
+        currFetchState = FETCH_STATE.FS_TILE;
+        pushedX = 0;
+        fetchX = 0;
+        discardPixels = 0;
+        tileIndex = 0;
+        tileDataLo = 0;
+        tileDataHi = 0;
+    }
+
 
     public void fetch() {
+        LCD lcd = context.getIoRegisters().getLcd();
+        int mapY = (lcd.getLY() + lcd.getSCY()) & 0xFF;
+        int mapX = (fetchX + lcd.getSCX()) & 0xFF;
+        int tileY = (mapY & 0x7) * 2;
         switch (currFetchState) {
             case FS_TILE -> {
-                if (context.getIoRegisters().getLcd().getBGWindowDisplay()) {
-                    BGWFetchData[0] = context.read(context.getIoRegisters().getLcd().getBGTileMapArea() +
-                            (mapX / 8) + ((mapY / 8) * 32));
-
-                    if (context.getIoRegisters().getLcd().getBGWindowTileArea() == 0x8800) {
-                        BGWFetchData[0] += 128;
-                    }
-                }
+                int tileMapAddr = lcd.getBGTileMapArea()
+                        + ((mapX >> 3) & 0x1F)
+                        + (((mapY >> 3) & 0x1F) * 32);
+                tileIndex = context.read(tileMapAddr) & 0xFF;
                 currFetchState = FETCH_STATE.FS_DATA0;
-                fetchX += 8;
             }
             case FS_DATA0 -> {
-                BGWFetchData[1] = context.read(context.getIoRegisters().getLcd().getBGWindowTileArea() +
-                        ((BGWFetchData[0] & 0xFF) * 16) + tileY);
+                tileDataLo = context.read(resolveTileDataAddress(lcd, tileIndex, tileY));
                 currFetchState = FETCH_STATE.FS_DATA1;
             }
             case FS_DATA1 -> {
-
-                BGWFetchData[2] = context.read(context.getIoRegisters().getLcd().getBGWindowTileArea() +
-                        ((BGWFetchData[0] & 0xFF) * 16) + tileY + 1);
+                tileDataHi = context.read(resolveTileDataAddress(lcd, tileIndex, tileY) + 1);
                 currFetchState = FETCH_STATE.FS_IDLE;
             }
             case FS_IDLE -> {
                 currFetchState = FETCH_STATE.FS_PUSH;
             }
             case FS_PUSH -> {
-                if (add())
+                if (pushToFifo()) {
+                    fetchX += 8;
                     currFetchState = FETCH_STATE.FS_TILE;
-
+                }
             }
         }
     }
 
     public void pushPixel() {
-        if (pixelQueue.size() > 8) {
-            int pixelData = pixelQueue.pop();
-            if (lineX >= (context.getIoRegisters().getLcd().getSCX() % 8)) {
-                context.getPpu().framebuffer[pushedX + (context.getIoRegisters().getLcd().getLY() * PPU.XRES)] = pixelData;
-                pushedX++;
-            }
-            lineX++;
+        if (bgPixelFifo.isEmpty()) {
+            return;
+        }
+        int pixelData = bgPixelFifo.removeFirst();
+        if (discardPixels > 0) {
+            discardPixels--;
+            return;
+        }
+        if (pushedX < PPU.XRES) {
+            context.getPpu().framebuffer[pushedX + (context.getIoRegisters().getLcd().getLY() * PPU.XRES)] = pixelData;
+            pushedX++;
         }
     }
 
     public void process() {
-        mapY = context.getIoRegisters().getLcd().getLY() + context.getIoRegisters().getLcd().getSCY();
-        mapX = fetchX + context.getIoRegisters().getLcd().getSCX();
-        tileY = (mapY % 8) * 2;
         if (context.getPpu().getLineTicks() % 2 == 0) {
             fetch();
         }
@@ -88,18 +95,29 @@ public class PPUStateMachine {
     }
 
 
-    public boolean add() {
-        if (pixelQueue.size() > 8)
+    private int resolveTileDataAddress(LCD lcd, int tileId, int tileY) {
+        if (lcd.getBGWindowTileArea() == 0x8000) {
+            return 0x8000 + (tileId * 16) + tileY;
+        }
+        int signedTileId = (byte) tileId;
+        return 0x9000 + (signedTileId * 16) + tileY;
+    }
+
+    public boolean pushToFifo() {
+        if (!bgPixelFifo.isEmpty()) {
             return false;
-        int x = fetchX - (8 - (context.getIoRegisters().getLcd().getSCX() % 8));
-        for (int i = 0; i < 8; i++) {
-            int lo = ((BGWFetchData[2] >> i) & 1) << 1;
-            int hi = ((BGWFetchData[1] >> i) & 1);
-            int color = context.getIoRegisters().getLcd().getBgColors()[hi | lo];
-            if (x >= 0) {
-                pixelQueue.push(color);
-                fifoX++;
+        }
+        LCD lcd = context.getIoRegisters().getLcd();
+        boolean bgEnabled = lcd.getBGWindowDisplay();
+        for (int bit = 7; bit >= 0; bit--) {
+            int colorId = 0;
+            if (bgEnabled) {
+                int lo = (tileDataLo >> bit) & 0x1;
+                int hi = (tileDataHi >> bit) & 0x1;
+                colorId = (hi << 1) | lo;
             }
+            int color = lcd.getBgColors()[colorId];
+            bgPixelFifo.addLast(color);
         }
         return true;
     }
@@ -107,18 +125,15 @@ public class PPUStateMachine {
     public void processOAM() {
         if (context.getPpu().getLineTicks() >= 80) {
             context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_XFER);
-            currFetchState = FETCH_STATE.FS_TILE;
-            lineX = 0;
-            fetchX = 0;
-            pushedX = 0;
-            fifoX = 0;
+            resetFetcher();
+            discardPixels = context.getIoRegisters().getLcd().getSCX() & 0x7;
         }
     }
 
     public void processXFER() {
         process();
         if (pushedX >= PPU.XRES) {
-            pixelQueue.clear();
+            bgPixelFifo.clear();
             context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_HBLANK);
             if (context.getIoRegisters().getLcd().getHBlankInt()) context.getCpu().setLCDStatInt(true);
         }
@@ -130,6 +145,7 @@ public class PPUStateMachine {
             if (context.getIoRegisters().getLcd().getLY() >= PPU.LINES_PER_FRAME) {
                 context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_OAM);
                 context.getIoRegisters().getLcd().setLY(0);
+                context.getIoRegisters().updateLYCompare();
             }
             context.getPpu().setLineTicks(0);
         }

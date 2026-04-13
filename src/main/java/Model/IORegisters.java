@@ -9,6 +9,7 @@ public class IORegisters extends BusMemory {
     private Emulator context;
     private int[] serial_data = new int[2];
     private int[] data = new int[0xFF];
+    private int joyp = 0xCF;
     private DMA dma;
     private LCD lcd;
 
@@ -18,22 +19,27 @@ public class IORegisters extends BusMemory {
         this.context = context;
     }
 
-    public void incLY() {
-        lcd.setLY(lcd.getLY() + 1);
+    public void updateLYCompare() {
         if (lcd.getLY() == lcd.getLYC()) {
             lcd.setLYCEqLY(true);
             if (lcd.getLYCInt()) {
                 context.getCpu().setLCDStatInt(true);
             }
-        } else
+        } else {
             lcd.setLYCEqLY(false);
+        }
+    }
+
+    public void incLY() {
+        lcd.setLY(lcd.getLY() + 1);
+        updateLYCompare();
     }
 
     @Override
     public int read(int address) {
         return switch (HardwareRegisters.findByValue(address)) {
             case null -> data[address];
-            case P1JOYP -> 0;
+            case P1JOYP -> joyp;
             case SB -> serial_data[0];
             case SC -> serial_data[1];
             case DIV, TAC, TIMA, TMA -> context.getTimer().read(address);
@@ -63,7 +69,7 @@ public class IORegisters extends BusMemory {
             case WX -> lcd.getWX();
             case SCY -> lcd.getSCY();
             case SCX -> lcd.getSCX();
-            case LY -> lcd.getLY();
+            case LY -> context.getProcess() == null ? 0x90 : lcd.getLY();
             case LYC -> lcd.getLYC();
             case DMA -> dma.getVal();
             case LCDC -> lcd.getLCDC();
@@ -79,9 +85,7 @@ public class IORegisters extends BusMemory {
     public void write(int address, int value) {
         switch (HardwareRegisters.findByValue(address)) {
             case null -> data[address] = value;
-            case P1JOYP -> {
-                return;
-            }
+            case P1JOYP -> joyp = 0xC0 | (value & 0x30) | 0x0F;
             case SB -> serial_data[0] = value;
             case SC -> serial_data[1] = value;
             case DIV, TAC, TIMA, TMA -> context.getTimer().write(address, value);
@@ -151,10 +155,25 @@ public class IORegisters extends BusMemory {
             }
             case SCY -> lcd.setSCY(value & 0xFF);
             case SCX -> lcd.setSCX(value & 0xFF);
-            case LCDC -> lcd.setLCDC(value & 0xFF);
-            case STAT -> lcd.setSTAT(value & 0xFF);
-            case LY -> lcd.setLY(value & 0xFF);
-            case LYC -> lcd.setLYC(value & 0xFF);
+            case LCDC -> {
+                boolean wasEnabled = lcd.getLCDPPUEnabled();
+                lcd.setLCDC(value & 0xFF);
+                boolean isEnabled = lcd.getLCDPPUEnabled();
+                if (wasEnabled && !isEnabled) {
+                    context.getPpu().disableLCD();
+                } else if (!wasEnabled && isEnabled) {
+                    context.getPpu().enableLCD();
+                }
+            }
+            case STAT -> lcd.writeSTAT(value & 0xFF);
+            case LY -> {
+                lcd.setLY(0);
+                updateLYCompare();
+            }
+            case LYC -> {
+                lcd.setLYC(value & 0xFF);
+                updateLYCompare();
+            }
             case DMA -> dma.start(value & 0xFFFF);
             case BGP -> lcd.updatePalette(value & 0xFFFF, 0);
             case OBP0 -> lcd.updatePalette(value & 0xFFFF, 1);
