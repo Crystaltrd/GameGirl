@@ -61,7 +61,7 @@ public class CPU {
     }
 
     public void output() {
-        System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
+        //System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
     }
     public void fetchParams() {
         memDest = 0;

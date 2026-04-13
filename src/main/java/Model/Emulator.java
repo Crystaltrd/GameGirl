@@ -1,5 +1,6 @@
 package Model;
 
+import Vue.TileView;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +10,7 @@ import java.io.InputStream;
 @Getter
 public class Emulator {
     private Process process = null;
+    private TileView Renderer = null;
     private boolean paused = false;
     private boolean running = true;
     private boolean emergency = false;
@@ -17,7 +19,6 @@ public class Emulator {
     private Catridge catridge;
     private CPU cpu;
     private PPU ppu;
-    private OAM oam;
     private Timer timer;
     private IORegisters ioRegisters;
     private byte[] WRAM = new byte[0x2000];
@@ -63,19 +64,25 @@ public class Emulator {
         write(address, value & 0xFF);
     }
 
+
+
     public Emulator() {
+        cpu = new CPU(this);
+        ppu = new PPU(this);
+        timer = new Timer(this);
     }
+
+    private byte currchar = 0;
 
     public void tick(int cycles) {
         for (int i = 0; i < cycles; i++) {
             for (int j = 0; j < 4; j++) {
                 ticks++;
                 timer.tick();
+                ppu.tick();
             }
         }
     }
-
-    private byte currchar = 0;
 
     public int read(int address) {
         address &= 0xFFFF;
@@ -90,7 +97,7 @@ public class Emulator {
         else if (Commons.isBetween(address, 0xE000, 0xFDFF))
             return WRAM[address - 0xE000] & 0xFF;
         else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
-            return oam.read(address);
+            return ppu.read_oam(address);
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return 0;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
@@ -102,6 +109,15 @@ public class Emulator {
         System.err.printf("Reading from %04X failed\n", address);
         System.exit(-1);
         return 0;
+    }
+
+    public void dbg_update() {
+        if (read((char) 0xFF02) != 0) {
+            char c = (char) read((char) 0xFF01);
+            dbg_msg.append(c);
+            write((char) 0xFF02, (byte) 0);
+        }
+        System.out.println("DBG: " + dbg_msg);
     }
 
     public void write(int address, int value) {
@@ -116,7 +132,7 @@ public class Emulator {
         } else if (Commons.isBetween(address, 0xE000, 0xFDFF))
             WRAM[address - 0xE000] = (byte) value;
         else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
-            oam.write(address, value);
+            ppu.write_oam(address, value);
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
@@ -128,25 +144,11 @@ public class Emulator {
 
     }
 
-    public void dbg_update() {
-        if (read((char) 0xFF02) != 0) {
-            char c = (char) read((char) 0xFF01);
-            dbg_msg.append(c);
-            write((char) 0xFF02, (byte) 0);
-        }
-        System.out.println("DBG: " + dbg_msg);
-    }
-
-
     public int run(InputStream rom) {
         try {
             if (rom == null)
                 return 1;
             catridge = new Catridge(rom);
-            cpu = new CPU(this);
-            ppu = new PPU(this);
-            oam = new OAM(this);
-            timer = new Timer(this);
             ioRegisters = new IORegisters(this);
             while (running) {
                 //dbg_update();
