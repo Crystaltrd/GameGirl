@@ -32,7 +32,7 @@ public class LCD {
 
     private Emulator context;
     private int LCDC = 0x91;
-    private int LY = 0x90;
+    private int LY;
     private int LYC;
     private int STAT;
     private int SCY;
@@ -55,17 +55,16 @@ public class LCD {
     }
 
     public void updatePalette(int val, int pal) {
-        int col0 = ColorID0Mask.getValue(pal);
-        int col1 = ColorID1Mask.getValue(pal);
-        int col2 = ColorID2Mask.getValue(pal);
-        int col3 = ColorID3Mask.getValue(pal);
+        int col0 = ColorID0Mask.getValue(val);
+        int col1 = ColorID1Mask.getValue(val);
+        int col2 = ColorID2Mask.getValue(val);
+        int col3 = ColorID3Mask.getValue(val);
         switch (pal) {
             case 0:
                 bgColors[0] = LookAndFeelController.defaultPalette[col0];
                 bgColors[1] = LookAndFeelController.defaultPalette[col1];
                 bgColors[2] = LookAndFeelController.defaultPalette[col2];
                 bgColors[3] = LookAndFeelController.defaultPalette[col3];
-                BGPalette = val;
                 break;
             case 1:
                 sp1Colors[0] = LookAndFeelController.defaultPalette[0];
@@ -79,7 +78,7 @@ public class LCD {
                 sp2Colors[1] = LookAndFeelController.defaultPalette[col1];
                 sp2Colors[2] = LookAndFeelController.defaultPalette[col2];
                 sp2Colors[3] = LookAndFeelController.defaultPalette[col3];
-                ObjPalette[1] = val & ~(0x3);
+                ObjPalette[1] = val & (0x3);
                 break;
         }
     }

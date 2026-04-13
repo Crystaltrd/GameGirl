@@ -1,5 +1,6 @@
 package Model;
 
+import Vue.GameView;
 import Vue.TileView;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,8 @@ import java.io.InputStream;
 @Getter
 public class Emulator {
     private Process process = null;
-    private TileView Renderer = null;
+    private TileView tileMapRenderer = null;
+    private GameView GameRenderer = null;
     private boolean paused = false;
     private boolean running = true;
     private boolean emergency = false;

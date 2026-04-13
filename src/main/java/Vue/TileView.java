@@ -13,17 +13,34 @@ public class TileView extends JPanel {
 
     TileView(Emulator context) {
         this.context = context;
+        bvec[0] = 16 * (8 + 1) * LookAndFeelController.scale;
+        bvec[1] = 32 * (8 + 2) * LookAndFeelController.scale;
         setIgnoreRepaint(true);
     }
 
     public void paintComponent(Graphics g) {
         if (context != null) {
             super.paintComponent(g);
-            Image img = createImageWithText();
+            Image img = createTilemapImage();
             g.drawImage(img, 0, 0, this);
         }
     }
 
+    public Dimension getPreferredSize() {
+        return new Dimension(bvec[0], bvec[1]);
+    }
+
+    public int getHeight() {
+        return bvec[1];
+    }
+
+    public int getWidth() {
+        return bvec[0];
+    }
+
+    public Dimension getSize() {
+        return new Dimension(bvec[0], bvec[1]);
+    }
     public void displayTile(Graphics g, int addr, int tileNum, int x, int y) {
         Rectangle rc = new Rectangle();
         for (int tileY = 0; tileY < 16; tileY += 2) {
@@ -43,12 +60,11 @@ public class TileView extends JPanel {
     }
 
 
-    private Image createImageWithText() {
+    private Image createTilemapImage() {
         int xDraw = 0;
         int yDraw = 0;
         int tilenum = 0;
-        bvec[0] = 16 * (8 + 1) * LookAndFeelController.scale;
-        bvec[1] = 32 * (8 + 2) * LookAndFeelController.scale;
+
         BufferedImage bufferedImage = new BufferedImage(bvec[0], bvec[1], BufferedImage.TYPE_INT_ARGB);
         Graphics g = bufferedImage.getGraphics();
         g.setColor(new Color(0xFF111111));

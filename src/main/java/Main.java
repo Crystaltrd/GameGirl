@@ -8,6 +8,7 @@ import java.io.InputStream;
 
 public class Main {
     public static void main(String[] args) {
-        MainView app = new MainView();
+        MainView app = new MainView(true);
+        
     }
 }

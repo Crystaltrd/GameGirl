@@ -1,10 +1,9 @@
 package Model;
 
+import Vue.GameView;
 import Vue.TileView;
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.swing.*;
 
 @Setter
 @Getter
@@ -19,7 +18,7 @@ public class PPU extends BusMemory {
     private OAMEntry[] oam = new OAMEntry[40];
     private int currFrame;
     private int lineTicks;
-    private int[] framebuffer = new int[YRES * XRES];
+    public int[] framebuffer = new int[YRES * XRES * 2];
     private PPUStateMachine stateMachine;
     
     PPU(Emulator context) {
@@ -32,9 +31,13 @@ public class PPU extends BusMemory {
 
     public void tick() {
         lineTicks++;
-        TileView display = context.getRenderer();
-        if (display != null) {
-            display.repaint();
+        TileView tileDisplay = context.getTileMapRenderer();
+        GameView gameDisplay = context.getGameRenderer();
+        if (tileDisplay != null) {
+            tileDisplay.repaint();
+        }
+        if (gameDisplay != null) {
+            gameDisplay.repaint();
         }
         switch (context.getIoRegisters().getLcd().getPPUMode()) {
             case MODE_HBLANK -> {
@@ -64,6 +67,7 @@ public class PPU extends BusMemory {
         if (address >= 0x8000)
             address -= 0x8000;
         VRAM[address] = (byte) (value & 0xFF);
+
     }
 
     public int read_oam(int address) {
