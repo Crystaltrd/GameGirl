@@ -18,6 +18,8 @@ public class Emulator {
     private CPU cpu;
     private PPU ppu;
     private OAM oam;
+    private Timer timer;
+    private IORegisters ioRegisters;
     private byte[] WRAM = new byte[0x2000];
     private byte[] ZeroPage = new byte[0x80];
 
@@ -65,7 +67,14 @@ public class Emulator {
     }
 
     public void tick(int cycles) {
+        for (int i = 0; i < cycles; i++) {
+            for (int j = 0; j < 4; j++) {
+                ticks++;
+                timer.tick();
+            }
+        }
     }
+
     private byte currchar = 0;
 
     public int read(int address) {
@@ -85,11 +94,7 @@ public class Emulator {
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return 0;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
-            if (address == 0xFF02)
-                return readReady;
-            if (address == 0xFF01)
-                return currchar;
-            return 0x90; //TODO IO
+            return ioRegisters.read(address - 0xFF00);
         } else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
             return ZeroPage[address - 0xFF80] & 0xFF;
         else if (address == 0xFFFF)
@@ -115,11 +120,7 @@ public class Emulator {
         else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
-            if (address == 0xFF02)
-                readReady = (byte) value;
-            if (address == 0xFF01)
-                currchar = (byte) value;
-            return; //TODO IO
+            ioRegisters.write(address - 0xFF00, value);
         } else if (Commons.isBetween(address, 0xFF80, 0xFFFE))
             ZeroPage[address - 0xFF80] = (byte) value;
         else if (address == 0xFFFF)
@@ -132,11 +133,10 @@ public class Emulator {
             char c = (char) read((char) 0xFF01);
             dbg_msg.append(c);
             write((char) 0xFF02, (byte) 0);
-            System.out.println("DBG: " + dbg_msg);
         }
+        System.out.println("DBG: " + dbg_msg);
     }
 
-    
 
     public int run(InputStream rom) {
         try {
@@ -146,8 +146,10 @@ public class Emulator {
             cpu = new CPU(this);
             ppu = new PPU(this);
             oam = new OAM(this);
+            timer = new Timer(this);
+            ioRegisters = new IORegisters(this);
             while (running) {
-                // dbg_update();
+                //dbg_update();
                 if (process != null && !process.isAlive())
                     return 0;
                 if (emergency)
@@ -160,7 +162,6 @@ public class Emulator {
                     System.out.println("CPU stopped");
                     return 0;
                 }
-                ticks++;
             }
             return 0;
         } catch (Exception e) {

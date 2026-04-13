@@ -47,6 +47,7 @@ public class CPU {
     private boolean IME;
     private boolean enablingIME;
     private boolean stepping;
+    private boolean skipOutput;
     private Instruction currInst;
 
     CPU(Emulator context) {
@@ -59,6 +60,9 @@ public class CPU {
         currInst = InstructionSet.getInstr(currOpcode);
     }
 
+    public void output() {
+        System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
+    }
     public void fetchParams() {
         memDest = 0;
         destIsMem = false;
@@ -196,18 +200,23 @@ public class CPU {
     }
 
     public boolean step() {
-        if (!halted) {
-            System.out.printf("A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n", getA(), getF(), getB(), getC(), getD(), getE(), getH(), getL(), getSP(), getPC(), context.read(PC), context.read(PC + 1), context.read(PC + 2), context.read(PC + 3));
-            fetchInstr();
-            fetchParams();
 
+        if (!halted) {
+            if (!skipOutput)
+                output();
+            else
+                skipOutput = false;
+            fetchInstr();
+            context.tick(1);
+            fetchParams();
             execute();
         } else {
             context.tick(1);
-            if (interruptRequested()) {
+            if (IF != 0) {
                 halted = false;
             }
         }
+
         if (IME) {
             handleInterrupts();
             enablingIME = false;
@@ -215,6 +224,7 @@ public class CPU {
         if (enablingIME) {
             IME = true;
         }
+
         return true;
     }
 
@@ -261,13 +271,18 @@ public class CPU {
     }
 
     public void gotoAddr(int addr, boolean pushPC) {
+
         if (checkCond(currInst.getCondType())) {
+
+
             if (pushPC) {
                 context.tick(2);
                 context.push16(getPC());
             }
             setPC(addr);
             context.tick(1);
+        } else {
+
         }
     }
 
@@ -458,32 +473,42 @@ public class CPU {
             setVBlankInt(false);
             halted = false;
             IME = false;
+            skipOutput = true;
         } else if (isLCDStatIntsEnabled() && isLCDStatIntRequested()) {
+            output();
             context.push16(PC);
             PC = 0x48;
             setLCDStatInt(false);
             halted = false;
             IME = false;
+            skipOutput = true;
         } else if (isTimerIntsEnabled() && isTimerIntRequested()) {
+            output();
             context.push16(PC);
             PC = 0x50;
             setTimerInt(false);
             halted = false;
             IME = false;
+            skipOutput = true;
         } else if (isSerialIntsEnabled() && isSerialIntRequested()) {
+            output();
             context.push16(PC);
             PC = 0x58;
             setSerialInt(false);
             halted = false;
             IME = false;
+            skipOutput = true;
         } else if (isJoypadIntsEnabled() && isJoypadIntRequested()) {
+            output();
             context.push16(PC);
             PC = 0x60;
             setJoypadInt(false);
             halted = false;
             IME = false;
+            skipOutput = true;
         }
     }
+
     public void setFlags(int Z, int N, int H, int C) {
         if (Z != -1) setZeroFlag(Z == 1);
         if (N != -1) setSubtractFlag(N == 1);
