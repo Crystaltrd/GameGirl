@@ -36,34 +36,12 @@ public class TileView extends JPanel {
                 rc.x = x + ((7 - bit) * LookAndFeelController.scale);
                 rc.y = y + ((tileY / 2) * LookAndFeelController.scale);
                 rc.width = rc.height = LookAndFeelController.scale;
-                g.setColor(LookAndFeelController.palette[pixel]);
+                g.setColor(new Color(LookAndFeelController.defaultPalette[pixel]));
                 g.fillRect(rc.x, rc.y, rc.width, rc.height);
             }
         }
     }
 
-    public void displayTile(Graphics g, int[] data, int x, int y) {
-        Rectangle rc = new Rectangle();
-        System.out.println("==================");
-        for (int tileY = 0; tileY < 16; tileY += 2) {
-            int b1 = data[tileY];
-            int b2 = data[tileY + 1];
-            for (int bit = 7; bit >= 0; bit--) {
-                int lo = ((b2 >> bit) & 1) << 1;
-                int hi = ((b1 >> bit) & 1);
-                int pixel = hi | lo;
-                System.out.print(pixel + " ");
-                rc.x = x + ((7 - bit) * LookAndFeelController.scale);
-                rc.y = y + ((tileY / 2) * LookAndFeelController.scale);
-                rc.width = rc.height = LookAndFeelController.scale;
-                g.setColor(LookAndFeelController.palette[pixel]);
-                g.fillRect(rc.x, rc.y, rc.width, rc.height);
-            }
-            System.out.println();
-        }
-
-        System.out.println("==================");
-    }
 
     private Image createImageWithText() {
         int xDraw = 0;

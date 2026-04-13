@@ -50,7 +50,6 @@ public class Emulator {
     }
 
 
-
     public int read16(int address) {
         int lo = read(address);
         int hi = read(address + 1);
@@ -63,19 +62,21 @@ public class Emulator {
     }
 
 
-
     public Emulator() {
         cpu = new CPU(this);
         ppu = new PPU(this);
         timer = new Timer(this);
+        ioRegisters = new IORegisters(this);
     }
 
     public Emulator(Process pr) {
         cpu = new CPU(this);
         ppu = new PPU(this);
         timer = new Timer(this);
+        ioRegisters = new IORegisters(this);
         process = pr;
     }
+
     private byte currchar = 0;
 
     public void tick(int cycles) {
@@ -85,6 +86,7 @@ public class Emulator {
                 timer.tick();
                 ppu.tick();
             }
+            ioRegisters.getDma().tick();
         }
     }
 
@@ -100,9 +102,11 @@ public class Emulator {
             return WRAM[address - 0xC000] & 0xFF;
         else if (Commons.isBetween(address, 0xE000, 0xFDFF))
             return WRAM[address - 0xE000] & 0xFF;
-        else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
+        else if (Commons.isBetween(address, 0xFE00, 0xFE9F)) {
+            if (ioRegisters.getDma().isActive())
+                return 0xFF;
             return ppu.read_oam(address);
-        else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
+        } else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return 0;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
             return ioRegisters.read(address - 0xFF00);
@@ -135,9 +139,11 @@ public class Emulator {
             WRAM[address - 0xC000] = (byte) value;
         } else if (Commons.isBetween(address, 0xE000, 0xFDFF))
             WRAM[address - 0xE000] = (byte) value;
-        else if (Commons.isBetween(address, 0xFE00, 0xFE9F))
+        else if (Commons.isBetween(address, 0xFE00, 0xFE9F)) {
+            if (ioRegisters.getDma().isActive())
+                return;
             ppu.write_oam(address, value);
-        else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
+        } else if (Commons.isBetween(address, 0xFEA0, 0xFEFF))
             return;
         else if (Commons.isBetween(address, 0xFF00, 0xFF7F)) {
             ioRegisters.write(address - 0xFF00, value);
@@ -153,7 +159,6 @@ public class Emulator {
             if (rom == null)
                 return 1;
             catridge = new Catridge(rom);
-            ioRegisters = new IORegisters(this);
             while (running) {
                 //dbg_update();
                 if (process != null && !process.isAlive())

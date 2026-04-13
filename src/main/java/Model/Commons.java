@@ -1,5 +1,7 @@
 package Model;
 
+import java.util.concurrent.TimeUnit;
+
 public class Commons {
     public static int getBit(int n, int k) {
         return (n >> k) & 1;
@@ -11,5 +13,9 @@ public class Commons {
 
     public static boolean isBetween(int a, int low, int high) {
         return a >= low && a <= high;
+    }
+
+    public static long getTicks() {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
     }
 }

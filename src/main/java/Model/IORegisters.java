@@ -9,9 +9,24 @@ public class IORegisters extends BusMemory {
     private Emulator context;
     private int[] serial_data = new int[2];
     private int[] data = new int[0xFF];
+    private DMA dma;
+    private LCD lcd;
 
     IORegisters(Emulator context) {
+        dma = new DMA(context);
+        lcd = new LCD(context);
         this.context = context;
+    }
+
+    public void incLY() {
+        lcd.setLY(lcd.getLY() + 1);
+        if (lcd.getLY() == lcd.getLYC()) {
+            lcd.setLYCEqLY(true);
+            if (lcd.getLYCInt()) {
+                context.getCpu().setLCDStatInt(true);
+            }
+        } else
+            lcd.setLYCEqLY(false);
     }
 
     @Override
@@ -44,18 +59,18 @@ public class IORegisters extends BusMemory {
             case NR50 -> 0;
             case NR51 -> 0;
             case NR52 -> 0;
-            case LCDC -> 0;
-            case STAT -> 0;
-            case SCY -> 0;
-            case SCX -> 0;
-            case LY -> 0x90;
-            case LYC -> 0;
-            case DMA -> 0;
-            case BGP -> 0;
-            case OBP0 -> 0;
-            case OBP1 -> 0;
-            case WY -> 0;
-            case WX -> 0;
+            case WY -> lcd.getWY();
+            case WX -> lcd.getWX();
+            case SCY -> lcd.getSCY();
+            case SCX -> lcd.getSCX();
+            case LY -> lcd.getLY();
+            case LYC -> lcd.getLYC();
+            case DMA -> dma.getVal();
+            case LCDC -> lcd.getLCDC();
+            case STAT -> lcd.getSTAT();
+            case OBP0 -> lcd.getObjPalette()[0];
+            case OBP1 -> lcd.getObjPalette()[1];
+            case BGP -> lcd.getBGPalette();
             case BANK -> 0;
         };
     }
@@ -71,7 +86,6 @@ public class IORegisters extends BusMemory {
             case SC -> serial_data[1] = value;
             case DIV, TAC, TIMA, TMA -> context.getTimer().write(address, value);
             case IF -> context.getCpu().setIF(value & 0x1F);
-
             case NR10 -> {
                 return;
             }
@@ -135,42 +149,18 @@ public class IORegisters extends BusMemory {
             case NR52 -> {
                 return;
             }
-            case LCDC -> {
-                return;
-            }
-            case STAT -> {
-                return;
-            }
-            case SCY -> {
-                return;
-            }
-            case SCX -> {
-                return;
-            }
-            case LY -> {
-                return;
-            }
-            case LYC -> {
-                return;
-            }
-            case DMA -> {
-                return;
-            }
-            case BGP -> {
-                return;
-            }
-            case OBP0 -> {
-                return;
-            }
-            case OBP1 -> {
-                return;
-            }
-            case WY -> {
-                return;
-            }
-            case WX -> {
-                return;
-            }
+            case SCY -> lcd.setSCY(value & 0xFF);
+            case SCX -> lcd.setSCX(value & 0xFF);
+            case LCDC -> lcd.setLCDC(value & 0xFF);
+            case STAT -> lcd.setSTAT(value & 0xFF);
+            case LY -> lcd.setLY(value & 0xFF);
+            case LYC -> lcd.setLYC(value & 0xFF);
+            case DMA -> dma.start(value & 0xFFFF);
+            case BGP -> lcd.updatePalette(value & 0xFFFF, 0);
+            case OBP0 -> lcd.updatePalette(value & 0xFFFF, 1);
+            case OBP1 -> lcd.updatePalette(value & 0xFFFF, 2);
+            case WY -> lcd.setWY(value & 0xFF);
+            case WX -> lcd.setWX(value & 0xFF);
             case BANK -> {
                 return;
             }
