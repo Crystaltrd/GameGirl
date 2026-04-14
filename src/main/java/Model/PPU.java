@@ -21,7 +21,7 @@ public class PPU extends BusMemory {
     private OAMEntry[] oam = new OAMEntry[40];
     private int currFrame;
     private int lineTicks;
-    public int[] framebuffer = new int[YRES * XRES * 2];
+    public int[] framebuffer = new int[YRES * XRES];
     private PPUStateMachine stateMachine;
 
     PPU(Emulator context) {
@@ -40,6 +40,7 @@ public class PPU extends BusMemory {
         context.getIoRegisters().updateLYCompare();
         context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_HBLANK);
         blankScreen();
+        requestFrameRepaint();
     }
 
     public void enableLCD() {
@@ -54,15 +55,18 @@ public class PPU extends BusMemory {
         Arrays.fill(framebuffer, LookAndFeelController.defaultPalette[0]);
     }
 
-    public void tick() {
+    public void requestFrameRepaint() {
         TileView tileDisplay = context.getTileMapRenderer();
         GameView gameDisplay = context.getGameRenderer();
-        if (tileDisplay != null) {
-            tileDisplay.repaint();
-        }
         if (gameDisplay != null) {
             gameDisplay.repaint();
         }
+        if (tileDisplay != null && (currFrame & 0x3) == 0) {
+            tileDisplay.repaint();
+        }
+    }
+
+    public void tick() {
         if (!context.getIoRegisters().getLcd().getLCDPPUEnabled()) {
             return;
         }

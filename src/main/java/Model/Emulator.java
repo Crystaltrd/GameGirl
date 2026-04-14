@@ -1,8 +1,10 @@
 package Model;
 
 import Vue.GameView;
+import Vue.MainView;
 import Vue.RegistersView;
 import Vue.TileView;
+import Vue.CatridgeView;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +19,8 @@ public class Emulator {
     private GameView GameRenderer = null;
     private RegistersView RegisterRenderer = null;
     private JTextArea debugWindow = null;
+    private MainView mainView = null;
+    private CatridgeView catridgeView = null;
     private boolean paused = false;
     private boolean running = false;
     private boolean emergency = false;
@@ -130,6 +134,8 @@ public class Emulator {
         if (read((char) 0xFF02) != 0) {
             char c = (char) read((char) 0xFF01);
             dbg_msg.append(c);
+            if (dbg_msg.length() > 255)
+                dbg_msg.delete(0, dbg_msg.length());
             write((char) 0xFF02, (byte) 0);
         }
     }
@@ -166,6 +172,18 @@ public class Emulator {
             if (rom == null)
                 return 1;
             catridge = new Catridge(rom);
+            if (mainView != null)
+                mainView.setTitle(catridge.getTitle() + " - Gamegirl Emu");
+            if (catridgeView != null) {
+                catridgeView.getTitle().setText("Title: " + catridge.getTitle());
+                catridgeView.getLicensee().setText("Licensee: " + catridge.getLicensee());
+                catridgeView.getType().setText("Catridge Type: " + catridge.getType());
+                catridgeView.getSgb().setText("SGB Flag: " + (catridge.getSGBFlag() ? "Set" : "Not Set"));
+                catridgeView.getRomSz().setText("ROM Size: " + catridge.getROMSize() + " KiB");
+                catridgeView.getRamSz().setText("RAM Size: " + catridge.getRAMSize() + " KiB");
+                catridgeView.getRegion().setText("Region: " + catridge.getRegion());
+                catridgeView.getVer().setText("ROM Ver: " + catridge.getROMVer());
+            }
             while (running) {
 
                 if (process != null && !process.isAlive())

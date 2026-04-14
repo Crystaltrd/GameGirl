@@ -301,6 +301,7 @@ public class PPUStateMachine {
                 context.getCpu().setVBlankInt(true);
                 if (context.getIoRegisters().getLcd().getVBlankInt()) context.getCpu().setLCDStatInt(true);
                 context.getPpu().setCurrFrame(context.getPpu().getCurrFrame() + 1);
+                context.getPpu().requestFrameRepaint();
                 wyConditionTriggered = false;
                 windowLineCounter = 0;
                 long end = Commons.getTicks();

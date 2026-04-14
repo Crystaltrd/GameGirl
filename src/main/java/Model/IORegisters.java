@@ -7,15 +7,16 @@ import lombok.Setter;
 @Getter
 public class IORegisters extends BusMemory {
     private Emulator context;
+    private Joypad joyp;
     private int[] serial_data = new int[2];
     private int[] data = new int[0xFF];
-    private int joyp = 0xCF;
     private DMA dma;
     private LCD lcd;
 
     IORegisters(Emulator context) {
         dma = new DMA(context);
         lcd = new LCD(context);
+        joyp = new Joypad(context);
         this.context = context;
     }
 
@@ -38,7 +39,7 @@ public class IORegisters extends BusMemory {
     @Override
     public int read(int address) {
         return switch (HardwareRegisters.findByValue(address)) {
-            case P1JOYP -> joyp;
+            case P1JOYP -> joyp.getByte();
             case SB -> serial_data[0];
             case SC -> serial_data[1];
             case DIV, TAC, TIMA, TMA -> context.getTimer().read(address);
@@ -62,8 +63,7 @@ public class IORegisters extends BusMemory {
     @Override
     public void write(int address, int value) {
         switch (HardwareRegisters.findByValue(address)) {
-            case null -> data[address] = value;
-            case P1JOYP -> joyp = 0xC0 | (value & 0x30) | 0x0F;
+            case P1JOYP -> joyp.setByte(value);
             case SB -> serial_data[0] = value;
             case SC -> {
                 serial_data[1] = value;
@@ -101,7 +101,7 @@ public class IORegisters extends BusMemory {
             case OBP1 -> lcd.updatePalette(value & 0xFFFF, 2);
             case WY -> lcd.setWY(value & 0xFF);
             case WX -> lcd.setWX(value & 0xFF);
-            default -> data[address] = value;
+            case null, default -> data[address] = value;
 
         }
         ;
