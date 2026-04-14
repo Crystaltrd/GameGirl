@@ -1,77 +1,116 @@
 package Model;
 
-public class PPU extends GBMemory {
-    public Tile[] tiles = new Tile[384];
-    public byte[] BackgroundMap = new byte[0x9FFF - 0x9800 + 1];
-    public ObjectAttributes[] objectAttributes = new ObjectAttributes[40];
-    public PPUStateMachine ppuStateMachine;
-    private EmulationContext ctx;
+import Controller.LookAndFeelController;
+import Vue.GameView;
+import Vue.TileView;
+import lombok.Getter;
+import lombok.Setter;
 
-    public PPU(EmulationContext ctx) {
-        this.ctx = ctx;
-        ppuStateMachine = new PPUStateMachine(ctx);
-        for (int i = 0; i < objectAttributes.length; i++) {
-            objectAttributes[i] = new ObjectAttributes();
+import java.util.Arrays;
+
+@Setter
+@Getter
+public class PPU extends BusMemory {
+    public static final int LINES_PER_FRAME = 154;
+    public static final int TICKS_PER_LINE = 456;
+    public static final int YRES = 144;
+    public static final int XRES = 160;
+
+    private Emulator context;
+    private byte[] VRAM = new byte[0xA000 - 0x8000];
+    private OAMEntry[] oam = new OAMEntry[40];
+    private int currFrame;
+    private int lineTicks;
+    public int[] framebuffer = new int[YRES * XRES];
+    private PPUStateMachine stateMachine;
+
+    PPU(Emulator context) {
+        this.context = context;
+        stateMachine = new PPUStateMachine(context);
+        for (int i = 0; i < oam.length; i++) {
+            oam[i] = new OAMEntry();
         }
+        blankScreen();
+    }
 
-        for (int i = 0; i < tiles.length; i++) {
-            tiles[i] = new Tile();
+    public void disableLCD() {
+        lineTicks = 0;
+        stateMachine.resetFetcher();
+        context.getIoRegisters().getLcd().setLY(0);
+        context.getIoRegisters().updateLYCompare();
+        context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_HBLANK);
+        blankScreen();
+        requestFrameRepaint();
+    }
+
+    public void enableLCD() {
+        lineTicks = 0;
+        stateMachine.resetFetcher();
+        context.getIoRegisters().getLcd().setLY(0);
+        context.getIoRegisters().updateLYCompare();
+        context.getIoRegisters().getLcd().setPPUMode(RENDER_MODE.MODE_OAM);
+    }
+
+    private void blankScreen() {
+        Arrays.fill(framebuffer, LookAndFeelController.defaultPalette[0]);
+    }
+
+    public void requestFrameRepaint() {
+        TileView tileDisplay = context.getTileMapRenderer();
+        GameView gameDisplay = context.getGameRenderer();
+        if (gameDisplay != null) {
+            gameDisplay.repaint();
+        }
+        if (tileDisplay != null && (currFrame & 0x3) == 0) {
+            tileDisplay.repaint();
         }
     }
 
     public void tick() {
-        ppuStateMachine.setLineTicks(ppuStateMachine.getLineTicks() + 1);
-        switch (ppuStateMachine.getCurrState()) {
-            case STATE_OAM -> {
-                System.out.println("OAM");
-                ppuStateMachine.ppuModeOAM();
-            }
-            case STATE_XFER -> {
-                System.out.println("XFER");
-                ppuStateMachine.ppuModeXFER();
-            }
-            case STATE_HBLANK -> {
-                System.out.println("HBLANK");
-                ppuStateMachine.ppuModeHBlank();
-            }
-            case STATE_VBLANK -> {
-            }
+        if (!context.getIoRegisters().getLcd().getLCDPPUEnabled()) {
+            return;
         }
-    }
-    public byte read(char address) {
-        if (address >= 0x8000 && address <= 0x97FF)
-            return tiles[(address - 0x8000) / 16].getByte((address - 0x8000) % 16);
-        else if (address >= 0x9800 && address <= 0x9FFF)
-            return BackgroundMap[address - 0x9800];
-        else if (address >= 0xFE00 && address <= 0xFE9F) {
-            if (ctx.ioRegisters.dmaRegister.isActive())
-                return (byte) 0xFF;
-            return objectAttributes[(address - 0xFE00) / 4].getByte((address - 0xFE00) % 4);
-        } else
-            return 0;
-    }
-
-    public void write(char address, byte value) {
-        if (address >= 0x8000 && address <= 0x97FF)
-            tiles[(address - 0x8000) / 16].setByte((address - 0x8000) % 16, value);
-        else if (address >= 0x9800 && address <= 0x9FFF)
-            BackgroundMap[address - 0x9800] = value;
-        else if (address >= 0xFE00 && address <= 0xFE9F) {
-            objectAttributes[(address - 0xFE00) / 4].setByte((address - 0xFE00) % 4, value);
+        lineTicks++;
+        switch (context.getIoRegisters().getLcd().getPPUMode()) {
+            case MODE_HBLANK -> {
+                stateMachine.processHBLANK();
+            }
+            case MODE_VBLANK -> {
+                stateMachine.processVBLANK();
+            }
+            case MODE_OAM -> {
+                stateMachine.processOAM();
+            }
+            case MODE_XFER -> {
+                stateMachine.processXFER();
+            }
         }
     }
 
-    public byte getPixel(int tile, int x, int y, boolean obj) {
-        if (obj)
-            return tiles[tile].getPixel(7 - x, y);
-        else {
-            if (ctx.ioRegisters.lcdControl.getBgTileDataArea() == LCDControl.windowTileDataAreaEnum.AREA88)
-                if (tile >= 128)
-                    return tiles[tile].getPixel(7 - x, y);
-                else
-                    return tiles[tile + 256].getPixel(7 - x, y);
-            else
-                return tiles[tile].getPixel(7 - x, y);
-        }
+    @Override
+    public int read(int address) {
+        if (address >= 0x8000)
+            address -= 0x8000;
+        return VRAM[address] & 0xFF;
+    }
+
+    @Override
+    public void write(int address, int value) {
+        if (address >= 0x8000)
+            address -= 0x8000;
+        VRAM[address] = (byte) (value & 0xFF);
+
+    }
+
+    public int read_oam(int address) {
+        if (address >= 0xFE00)
+            address -= 0xFE00;
+        return oam[(address) / 4].getByte((address) % 4) & 0xFF;
+    }
+
+    public void write_oam(int address, int value) {
+        if (address >= 0xFE00)
+            address -= 0xFE00;
+        oam[(address) / 4].setByte((address) % 4, value);
     }
 }

@@ -1,99 +1,109 @@
 package Model;
 
-import java.net.ProtocolFamily;
+import lombok.Getter;
+import lombok.Setter;
 
-public class IORegisters extends GBMemory {
-    public byte[] data = new byte[0xFF7F - 0xFF00 + 1];
-    public InterruptFlag IFReg = new InterruptFlag((byte) 0xE1);
-    public DMARegister dmaRegister;
-    public LCDControl lcdControl = new LCDControl();
-    private final EmulationContext emulator;
-    public Timer timer;
-    public byte LY = (byte) 0x90;
-    public byte LYC = (byte) 0x90;
-    public LCDStat lcdStat = new LCDStat();
-    public byte backgroundViewportY;
-    public byte backgroundViewportX;
-    public byte windowPositionY;
-    public byte windowPositionX;
-    public Palette bgPalette = new Palette();
-    public Palette obgPalette0 = new Palette();
-    public Palette obgPalette1 = new Palette();
+@Setter
+@Getter
+public class IORegisters extends BusMemory {
+    private Emulator context;
+    private Joypad joyp;
+    private int[] serial_data = new int[2];
+    private int[] data = new int[0xFF];
+    private DMA dma;
+    private LCD lcd;
 
-    IORegisters(EmulationContext emulator) {
-        this.emulator = emulator;
-        this.timer = new Timer(emulator);
-        this.dmaRegister = new DMARegister(emulator);
-        lcdControl.setByte((byte) 0x91);
-        bgPalette.setByte((byte) 0xFC);
-        obgPalette0.setByte((byte) 0xFF);
-        obgPalette1.setByte((byte) 0xFF);
+    IORegisters(Emulator context) {
+        dma = new DMA(context);
+        lcd = new LCD(context);
+        joyp = new Joypad(context);
+        this.context = context;
     }
 
-    public byte read(char addr) {
-        if (addr >= HardwareRegisters.DIV.addr && addr <= HardwareRegisters.TAC.addr) {
-            return timer.read(addr);
-        } else if (addr == HardwareRegisters.IF.addr)
-            return IFReg.getByte();
-        else if (addr == HardwareRegisters.DMA.addr)
-            return dmaRegister.getAddr();
-        else if (addr == HardwareRegisters.LCDC.addr)
-            return lcdControl.getByte();
-        else if (addr == HardwareRegisters.LY.addr)
-                return LY;
-        else if (addr == HardwareRegisters.LYC.addr)
-            return LYC;
-        else if (addr == HardwareRegisters.SCY.addr)
-            return backgroundViewportY;
-        else if (addr == HardwareRegisters.SCX.addr)
-            return backgroundViewportX;
-        else if (addr == HardwareRegisters.WY.addr)
-            return windowPositionY;
-        else if (addr == HardwareRegisters.WX.addr)
-            return windowPositionX;
-        else if (addr == HardwareRegisters.STAT.addr) {
-            return lcdStat.getByte();
-        } else if (addr == HardwareRegisters.BGP.addr)
-            return bgPalette.getByte();
-        else if (addr == HardwareRegisters.OBP0.addr)
-            return obgPalette0.getByte();
-        else if (addr == HardwareRegisters.OBP1.addr)
-            return obgPalette1.getByte();
-        return data[addr];
+    public void updateLYCompare() {
+        if (lcd.getLY() == lcd.getLYC()) {
+            lcd.setLYCEqLY(true);
+            if (lcd.getLYCInt()) {
+                context.getCpu().setLCDStatInt(true);
+            }
+        } else {
+            lcd.setLYCEqLY(false);
+        }
     }
 
-    public void write(char addr, byte val) {
-        if (addr >= HardwareRegisters.DIV.addr && addr <= HardwareRegisters.TAC.addr) {
-            timer.write(addr, val);
-        } else if (addr == HardwareRegisters.IF.addr)
-            IFReg.setByte(val);
-        else if (addr == HardwareRegisters.DMA.addr) {
-            dmaRegister.start(val);
-        } else if (addr == HardwareRegisters.LCDC.addr) {
-            lcdControl.setByte(val);
+    public void incLY() {
+        lcd.setLY(lcd.getLY() + 1);
+        updateLYCompare();
+    }
+
+    @Override
+    public int read(int address) {
+        return switch (HardwareRegisters.findByValue(address)) {
+            case P1JOYP -> joyp.getByte();
+            case SB -> serial_data[0];
+            case SC -> serial_data[1];
+            case DIV, TAC, TIMA, TMA -> context.getTimer().read(address);
+            case IF -> context.getCpu().getIF() & 0x1F;
+            case WY -> lcd.getWY();
+            case WX -> lcd.getWX();
+            case SCY -> lcd.getSCY();
+            case SCX -> lcd.getSCX();
+            case LY -> context.getProcess() == null ? lcd.getLY() : 0x90;
+            case LYC -> lcd.getLYC();
+            case DMA -> dma.getVal();
+            case LCDC -> lcd.getLCDC();
+            case STAT -> lcd.getSTAT();
+            case OBP0 -> lcd.getObjPalette()[0];
+            case OBP1 -> lcd.getObjPalette()[1];
+            case BGP -> lcd.getBGPalette();
+            case null, default -> data[address];
+        };
+    }
+
+    @Override
+    public void write(int address, int value) {
+        switch (HardwareRegisters.findByValue(address)) {
+            case P1JOYP -> joyp.setByte(value);
+            case SB -> serial_data[0] = value;
+            case SC -> {
+                serial_data[1] = value;
+                if (context.getDebugWindow() != null) {
+                    context.dbg_update();
+                    context.getDebugWindow().setText(String.valueOf(context.dbg_msg));
+                }
+            }
+            case DIV, TAC, TIMA, TMA -> context.getTimer().write(address, value);
+            case IF -> context.getCpu().setIF(value & 0x1F);
+            case SCY -> lcd.setSCY(value & 0xFF);
+            case SCX -> lcd.setSCX(value & 0xFF);
+            case LCDC -> {
+                boolean wasEnabled = lcd.getLCDPPUEnabled();
+                lcd.setLCDC(value & 0xFF);
+                boolean isEnabled = lcd.getLCDPPUEnabled();
+                if (wasEnabled && !isEnabled) {
+                    context.getPpu().disableLCD();
+                } else if (!wasEnabled && isEnabled) {
+                    context.getPpu().enableLCD();
+                }
+            }
+            case STAT -> lcd.writeSTAT(value & 0xFF);
+            case LY -> {
+                lcd.setLY(0);
+                updateLYCompare();
+            }
+            case LYC -> {
+                lcd.setLYC(value & 0xFF);
+                updateLYCompare();
+            }
+            case DMA -> dma.start(value & 0xFFFF);
+            case BGP -> lcd.updatePalette(value & 0xFFFF, 0);
+            case OBP0 -> lcd.updatePalette(value & 0xFFFF, 1);
+            case OBP1 -> lcd.updatePalette(value & 0xFFFF, 2);
+            case WY -> lcd.setWY(value & 0xFF);
+            case WX -> lcd.setWX(value & 0xFF);
+            case null, default -> data[address] = value;
 
         }
-        else if (addr == HardwareRegisters.LY.addr)
-            return;
-        else if (addr == HardwareRegisters.LYC.addr)
-            LYC = val;
-        else if (addr == HardwareRegisters.STAT.addr)
-            lcdStat.setByte(val);
-        else if (addr == HardwareRegisters.SCX.addr)
-            backgroundViewportX = val;
-        else if (addr == HardwareRegisters.SCY.addr)
-            backgroundViewportY = val;
-        else if (addr == HardwareRegisters.WX.addr)
-            windowPositionX = val;
-        else if (addr == HardwareRegisters.WY.addr)
-            windowPositionY = val;
-        else if (addr == HardwareRegisters.BGP.addr)
-            bgPalette.setByte(val);
-        else if (addr == HardwareRegisters.OBP0.addr)
-            obgPalette0.setByte(val);
-        else if (addr == HardwareRegisters.OBP1.addr)
-            obgPalette1.setByte(val);
-        else
-            data[addr] = val;
+        ;
     }
 }
