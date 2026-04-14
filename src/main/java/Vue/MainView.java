@@ -86,34 +86,28 @@ public class MainView extends JFrame implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent keyEvent) {
-        JOYP_BTNS button = JOYP_BTNS.JP_NONE;
-        switch (keyEvent.getKeyCode()) {
-            case KeyEvent.VK_W -> button = JOYP_BTNS.JP_UP;
-            case KeyEvent.VK_S -> button = JOYP_BTNS.JP_DOWN;
-            case KeyEvent.VK_A -> button = JOYP_BTNS.JP_LEFT;
-            case KeyEvent.VK_D -> button = JOYP_BTNS.JP_RIGHT;
-            case KeyEvent.VK_Q -> button = JOYP_BTNS.JP_A;
-            case KeyEvent.VK_E -> button = JOYP_BTNS.JP_B;
-            case KeyEvent.VK_ESCAPE -> button = JOYP_BTNS.JP_SEL;
-            case KeyEvent.VK_ENTER -> button = JOYP_BTNS.JP_START;
-        }
+        JOYP_BTNS button = decodeKey(keyEvent);
         emulator.getIoRegisters().getJoyp().setButton(button, false);
     }
 
     @Override
     public void keyReleased(KeyEvent keyEvent) {
 
-        JOYP_BTNS button = JOYP_BTNS.JP_NONE;
-        switch (keyEvent.getKeyCode()) {
-            case KeyEvent.VK_W -> button = JOYP_BTNS.JP_UP;
-            case KeyEvent.VK_S -> button = JOYP_BTNS.JP_DOWN;
-            case KeyEvent.VK_A -> button = JOYP_BTNS.JP_LEFT;
-            case KeyEvent.VK_D -> button = JOYP_BTNS.JP_RIGHT;
-            case KeyEvent.VK_Q -> button = JOYP_BTNS.JP_A;
-            case KeyEvent.VK_E -> button = JOYP_BTNS.JP_B;
-            case KeyEvent.VK_ESCAPE -> button = JOYP_BTNS.JP_SEL;
-            case KeyEvent.VK_ENTER -> button = JOYP_BTNS.JP_START;
-        }
+        JOYP_BTNS button = decodeKey(keyEvent);
         emulator.getIoRegisters().getJoyp().setButton(button, true);
+    }
+
+    private JOYP_BTNS decodeKey(KeyEvent keyEvent) {
+        return switch (keyEvent.getKeyCode()) {
+            case KeyEvent.VK_W -> JOYP_BTNS.JP_UP;
+            case KeyEvent.VK_S -> JOYP_BTNS.JP_DOWN;
+            case KeyEvent.VK_A -> JOYP_BTNS.JP_LEFT;
+            case KeyEvent.VK_D -> JOYP_BTNS.JP_RIGHT;
+            case KeyEvent.VK_Q -> JOYP_BTNS.JP_A;
+            case KeyEvent.VK_E -> JOYP_BTNS.JP_B;
+            case KeyEvent.VK_ESCAPE -> JOYP_BTNS.JP_SEL;
+            case KeyEvent.VK_ENTER -> JOYP_BTNS.JP_START;
+            default -> JOYP_BTNS.JP_NONE;
+        };
     }
 }
