@@ -7,11 +7,10 @@ public class APU extends GBMemory {
 
     private final PulseChannels pulse1 = new PulseChannels(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
     private final PulseChannels pulse2 = new PulseChannels(null,HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
-    private final Channel waveChannel = new Channel(HardwareRegisters.NR30, HardwareRegisters.NR31, HardwareRegisters.NR32, HardwareRegisters.NR33, HardwareRegisters.NR34);
-    private final Channel noiseChannel = new Channel(null,HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
-
     private final byte[] regs = new byte[0x27];
     private final byte[] waveRam = new byte[0x10];
+    private final WaveChannel waveChannel = new WaveChannel(this.waveRam, HardwareRegisters.NR30, HardwareRegisters.NR31, HardwareRegisters.NR32, HardwareRegisters.NR33, HardwareRegisters.NR34);
+    private final NoiseChannel noiseChannel = new NoiseChannel(null,HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
     private long tCycles = 0;
 
     APU(EmulationContext ctx) {
@@ -36,7 +35,12 @@ public class APU extends GBMemory {
         }
         if (a >= 0x10 && a <= 0x26) {
             if (a == (HardwareRegisters.NR52.addr & 0xFF)) {
-                return (byte) ((regs[a] & 0x80) | 0x70);
+                int channelFlags = 0;
+                if (pulse1.isEnabled()) channelFlags |= 0x01;
+                if (pulse2.isEnabled()) channelFlags |= 0x02;
+                if (waveChannel.isEnabled()) channelFlags |= 0x04;
+                if (noiseChannel.isEnabled()) channelFlags |= 0x08;
+                return (byte) ((regs[a] & 0x80) | 0x70 | channelFlags);
             }
             return regs[a];
         }
@@ -55,6 +59,12 @@ public class APU extends GBMemory {
         if( a >= 0x10 && a<= 0x19){
             if(a<= 0x14){pulse1.write(addr,val);}
             else {pulse2.write(addr,val);}
+        }
+        else if (a >= 0x1A && a <= 0x1E) {
+            waveChannel.write(addr, val);
+        }
+        else if (a >= 0x20 && a <= 0x23) {
+            noiseChannel.write(addr, val);
         }
 
         if (a < 0x10 || a > 0x26) {
@@ -79,6 +89,9 @@ public class APU extends GBMemory {
 
     public void tick() {
         tCycles++;
+        pulse1.tick(1);
+        pulse2.tick(1);
+        waveChannel.tick(1);
+        noiseChannel.tick(1);
     }
 }
-
