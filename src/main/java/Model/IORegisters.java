@@ -69,7 +69,7 @@ public class IORegisters extends BusMemory {
             case WX -> lcd.getWX();
             case SCY -> lcd.getSCY();
             case SCX -> lcd.getSCX();
-            case LY -> context.getProcess() == null ? 0x90 : lcd.getLY();
+            case LY -> context.getProcess() == null ? lcd.getLY() : 0x90;
             case LYC -> lcd.getLYC();
             case DMA -> dma.getVal();
             case LCDC -> lcd.getLCDC();
@@ -87,7 +87,13 @@ public class IORegisters extends BusMemory {
             case null -> data[address] = value;
             case P1JOYP -> joyp = 0xC0 | (value & 0x30) | 0x0F;
             case SB -> serial_data[0] = value;
-            case SC -> serial_data[1] = value;
+            case SC -> {
+                serial_data[1] = value;
+                if (context.getDebugWindow() != null) {
+                    context.dbg_update();
+                    context.getDebugWindow().setText(String.valueOf(context.dbg_msg));
+                }
+            }
             case DIV, TAC, TIMA, TMA -> context.getTimer().write(address, value);
             case IF -> context.getCpu().setIF(value & 0x1F);
             case NR10 -> {

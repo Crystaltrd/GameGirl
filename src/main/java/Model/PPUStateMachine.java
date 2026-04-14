@@ -173,7 +173,7 @@ public class PPUStateMachine {
                     long fps = frameCount;
                     startTimer = end;
                     frameCount = 0;
-                    if (context.getProcess() == null) System.out.printf("FPS: %d%n", fps);
+                    if (context.getProcess() == null) context.setFPS(fps);
                 }
                 frameCount++;
                 prevFrameTime = Commons.getTicks();

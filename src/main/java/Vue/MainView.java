@@ -10,20 +10,42 @@ public class MainView extends JFrame {
     Emulator emulator = new Emulator();
     TileView tileMapViewer;
     GameView gameViewer;
+    RegistersView registersView;
+    JTextArea debugScreen;
 
-    public MainView(boolean tile) {
+    public MainView() {
         JFileChooser chooser = new JFileChooser();
         setLayout(new BorderLayout());
+
         tileMapViewer = new TileView(emulator);
+        tileMapViewer.setBorder(BorderFactory.createLineBorder(Color.black, 2));
         getContentPane().add(tileMapViewer, BorderLayout.EAST);
         emulator.setTileMapRenderer(tileMapViewer);
-        gameViewer = new GameView(emulator);
-        getContentPane().add(gameViewer, BorderLayout.WEST);
-        emulator.setGameRenderer(gameViewer);
-        setSize(gameViewer.getWidth() + tileMapViewer.getWidth() + 16,
-                Math.max(gameViewer.getHeight(), tileMapViewer.getHeight()) + 16);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        gameViewer = new GameView(emulator);
+        JPanel gameCanvas = new JPanel(new FlowLayout());
+        gameCanvas.setSize(new Dimension(3, 3));
+        gameCanvas.add(gameViewer);
+        gameViewer.setBorder(BorderFactory.createLineBorder(Color.black, 2));
+        getContentPane().add(gameCanvas, BorderLayout.CENTER);
+        emulator.setGameRenderer(gameViewer);
+
+        registersView = new RegistersView(emulator);
+        getContentPane().add(registersView, BorderLayout.WEST);
+        emulator.setRegisterRenderer(registersView);
+        registersView.setBorder(BorderFactory.createLineBorder(Color.black, 2));
+
+
+        debugScreen = new JTextArea();
+        debugScreen.setMinimumSize(new Dimension(400, 60));
+        debugScreen.setMaximumSize(new Dimension(400, 90));
+        debugScreen.setEditable(false);
+        emulator.setDebugWindow(debugScreen);
+
+        getContentPane().add(debugScreen, BorderLayout.SOUTH);
+        setSize(1500, 900);
+        setExtendedState(getExtendedState() | JFrame.MAXIMIZED_BOTH);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
         try {
             int returnVal = chooser.showOpenDialog(this);

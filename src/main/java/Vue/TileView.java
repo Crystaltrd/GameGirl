@@ -14,7 +14,7 @@ public class TileView extends JPanel {
     TileView(Emulator context) {
         this.context = context;
         bvec[0] = 16 * (8 + 1) * LookAndFeelController.scale;
-        bvec[1] = 32 * (8 + 2) * LookAndFeelController.scale;
+        bvec[1] = 24 * (8 + 1) * LookAndFeelController.scale;
         setIgnoreRepaint(true);
     }
 

@@ -1,10 +1,12 @@
 package Model;
 
 import Vue.GameView;
+import Vue.RegistersView;
 import Vue.TileView;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.swing.*;
 import java.io.InputStream;
 
 @Setter
@@ -13,10 +15,13 @@ public class Emulator {
     private Process process = null;
     private TileView tileMapRenderer = null;
     private GameView GameRenderer = null;
+    private RegistersView RegisterRenderer = null;
+    private JTextArea debugWindow = null;
     private boolean paused = false;
-    private boolean running = true;
+    private boolean running = false;
     private boolean emergency = false;
     private long ticks = 0;
+    private long FPS = 0;
 
     private Catridge catridge;
     private CPU cpu;
@@ -127,7 +132,6 @@ public class Emulator {
             dbg_msg.append(c);
             write((char) 0xFF02, (byte) 0);
         }
-        System.out.println("DBG: " + dbg_msg);
     }
 
     public void write(int address, int value) {
@@ -157,12 +161,13 @@ public class Emulator {
     }
 
     public int run(InputStream rom) {
+        running = true;
         try {
             if (rom == null)
                 return 1;
             catridge = new Catridge(rom);
             while (running) {
-                //dbg_update();
+
                 if (process != null && !process.isAlive())
                     return 0;
                 if (emergency)
@@ -175,6 +180,8 @@ public class Emulator {
                     System.out.println("CPU stopped");
                     return 0;
                 }
+                //if(RegisterRenderer != null)
+                // RegisterRenderer.update();
             }
             return 0;
         } catch (Exception e) {
