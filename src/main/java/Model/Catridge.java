@@ -39,7 +39,11 @@ public class Catridge extends BusMemory {
     public String getLicensee() {
         String licensee;
         if (old_licensee_code_raw == 0x33) {
-            licensee = CatridgeLUTable.getNewLicensee(Integer.parseInt(new String(new_licensee_code_raw, StandardCharsets.US_ASCII)));
+            try {
+                licensee = CatridgeLUTable.getNewLicensee(Integer.parseInt(new String(new_licensee_code_raw, StandardCharsets.US_ASCII)));
+            } catch (NumberFormatException e) {
+                licensee = new String(new_licensee_code_raw, StandardCharsets.US_ASCII);
+            }
         } else {
             licensee = CatridgeLUTable.getOldLicensee(old_licensee_code_raw);
         }
