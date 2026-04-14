@@ -13,8 +13,8 @@ public class OAMEntry {
     public static BitField DmgPaletteMask = new BitField(0x10);
     public static BitField CGBBank = new BitField(0x8);
     public static BitField CGBPalette = new BitField(0x7);
-    private int XPos;
     private int YPos;
+    private int XPos;
     private int TileIndex;
     private int Attributes;
 
@@ -28,7 +28,7 @@ public class OAMEntry {
     }
 
     public int getDmgPalette() {
-        return XFlipMask.getValue(Attributes);
+        return DmgPaletteMask.getValue(Attributes);
     }
 
     public boolean isDrawnOver() {
@@ -38,8 +38,8 @@ public class OAMEntry {
     public int getByte(int n) {
         assert Commons.isBetween(n, 0, 3);
         return switch (n) {
-            case 0 -> XPos;
-            case 1 -> YPos;
+            case 0 -> YPos;
+            case 1 -> XPos;
             case 2 -> TileIndex;
             case 3 -> Attributes;
             default -> 0;
@@ -48,8 +48,8 @@ public class OAMEntry {
 
     public void setByte(int n, int value) {
         switch (n) {
-            case 0 -> XPos = value & 0xFF;
-            case 1 -> YPos = value & 0xFF;
+            case 0 -> YPos = value & 0xFF;
+            case 1 -> XPos = value & 0xFF;
             case 2 -> TileIndex = value & 0xFF;
             case 3 -> Attributes = value & 0xFF;
         }

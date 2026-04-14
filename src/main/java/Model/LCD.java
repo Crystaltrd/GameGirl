@@ -87,7 +87,7 @@ public class LCD {
                 sp2Colors[1] = LookAndFeelController.defaultPalette[col1];
                 sp2Colors[2] = LookAndFeelController.defaultPalette[col2];
                 sp2Colors[3] = LookAndFeelController.defaultPalette[col3];
-                ObjPalette[1] = val & (0x3);
+                ObjPalette[1] = val & ~(0x3);
                 break;
         }
     }

@@ -30,7 +30,7 @@ public class DMA {
             start_delay--;
             return;
         }
-        context.getPpu().write_oam(addr, context.read((val & 0xFF) * 0x100) + addr);
+        context.getPpu().write_oam(addr, context.read(((val & 0xFF) * 0x100) + addr));
         addr++;
         active = (addr & 0xFF) < 0xA0;
     }
