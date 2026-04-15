@@ -1,10 +1,6 @@
 package Model;
 
-import Vue.GameView;
-import Vue.MainView;
-import Vue.RegistersView;
-import Vue.TileView;
-import Vue.CatridgeView;
+import Vue.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -141,7 +137,7 @@ public class Emulator {
     }
 
     public void write(int address, int value) {
-        if (Commons.isBetween(0x0000, 0x7FFF, address))
+        if (Commons.isBetween(address, 0x0000, 0x7FFF))
             catridge.write(address, value);
         else if (Commons.isBetween(address, 0x8000, 0x9FFF))
             ppu.write(address, value);

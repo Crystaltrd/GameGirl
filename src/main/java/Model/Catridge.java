@@ -3,20 +3,25 @@ package Model;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class Catridge extends BusMemory {
-    private byte[] data;
-    private byte[] title_raw = new byte[0x143 - 0x134 + 1];
-    private byte[] new_licensee_code_raw = new byte[0x145 - 0x144 + 1];
-    private byte sgb_flag_raw;
-    private byte cartridge_type_raw;
-    private byte ROM_size_raw;
-    private byte RAM_size_raw;
-    private byte region_code_raw;
-    private byte old_licensee_code_raw;
-    private byte ROM_ver_raw;
+    private final byte[] data;
+    private final byte[] title_raw = new byte[0x143 - 0x134 + 1];
+    private final byte[] new_licensee_code_raw = new byte[0x145 - 0x144 + 1];
+    private final byte sgb_flag_raw;
+    private final byte cartridge_type_raw;
+    private final byte ROM_size_raw;
+    private final byte RAM_size_raw;
+    private final byte region_code_raw;
+    private final byte old_licensee_code_raw;
+    private final byte ROM_ver_raw;
 
+
+    private MBC_TYPES mbcType;
+    private int ramEnable = 0;
+    private int ROMBankNumber = 1;
+    private int ninthBit = 0;
+    
     public Catridge(InputStream romFile) throws IOException {
         data = romFile.readAllBytes();
         System.arraycopy(data, 0x0134, title_raw, 0, title_raw.length);
@@ -28,8 +33,8 @@ public class Catridge extends BusMemory {
         region_code_raw = data[0x014A];
         old_licensee_code_raw = data[0x014B];
         ROM_ver_raw = data[0x014C];
-        //header_checksum_raw = data[0x014D];
-        //System.arraycopy(data, 0x014E, global_checksum_raw, 0, global_checksum_raw.length);
+        if (Commons.isBetween(cartridge_type_raw, 0x19, 0x1E))
+            mbcType = MBC_TYPES.MBC_5;
     }
 
     public String getTitle() {
@@ -75,10 +80,27 @@ public class Catridge extends BusMemory {
     }
 
     public int read(int address) {
+        if (mbcType == MBC_TYPES.MBC_5) {
+            if (Commons.isBetween(address, 0, 0x3FFF)) {
+                return data[address] & 0xFF;
+            } else if (Commons.isBetween(address, 0x4000, 0x7FFF)) {
+                int addr = address & 0x3FFF;
+                addr |= (ROMBankNumber | ninthBit << 9) << 14;
+                return data[addr] & 0xFF;
+            }
+        }
         return data[address] & 0xFF;
     }
 
     public void write(int address, int value) {
-        data[address] = (byte) value;
+        if (mbcType == MBC_TYPES.MBC_5) {
+            if (Commons.isBetween(address, 0, 0x1FFF))
+                ramEnable = value;
+            else if (Commons.isBetween(address, 0x2000, 0x2FFF)) {
+                ROMBankNumber = value & 0xFF;
+            } else if (Commons.isBetween(address, 0x3000, 0x3FFF)) {
+                ninthBit = value == 0 ? 0 : 1;
+            }
+        }
     }
 }

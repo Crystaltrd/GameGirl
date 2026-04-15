@@ -30,6 +30,6 @@ public class CatridgeView extends JPanel {
         add(ramSz);
         add(region);
         add(ver);
-        setLayout(new GridLayout(20, 0));
+        setLayout(new GridLayout(8, 0));
     }
 }
