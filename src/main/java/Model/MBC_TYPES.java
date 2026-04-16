@@ -7,5 +7,8 @@ public enum MBC_TYPES {
     MBC_3,
     MBC_5,
     MBC_6,
-    MBC_7
+    MBC_7,
+    MMM01,
+    HUC1,
+    HUC3,
 }

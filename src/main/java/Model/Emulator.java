@@ -70,18 +70,19 @@ public class Emulator {
 
 
     public Emulator() {
-        cpu = new CPU(this);
-        ppu = new PPU(this);
-        timer = new Timer(this);
-        ioRegisters = new IORegisters(this);
+        init();
     }
 
     public Emulator(Process pr) {
+        init();
+        process = pr;
+    }
+
+    public void init() {
         cpu = new CPU(this);
         ppu = new PPU(this);
         timer = new Timer(this);
-        ioRegisters = new IORegisters(this);
-        process = pr;
+        ioRegisters = new IORegisters(this); 
     }
 
     private byte currchar = 0;

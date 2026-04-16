@@ -103,8 +103,8 @@ public class MainView extends JFrame implements KeyListener {
             case KeyEvent.VK_S -> JOYP_BTNS.JP_DOWN;
             case KeyEvent.VK_A -> JOYP_BTNS.JP_LEFT;
             case KeyEvent.VK_D -> JOYP_BTNS.JP_RIGHT;
-            case KeyEvent.VK_Q -> JOYP_BTNS.JP_A;
-            case KeyEvent.VK_E -> JOYP_BTNS.JP_B;
+            case KeyEvent.VK_K -> JOYP_BTNS.JP_A;
+            case KeyEvent.VK_L -> JOYP_BTNS.JP_B;
             case KeyEvent.VK_ESCAPE -> JOYP_BTNS.JP_SEL;
             case KeyEvent.VK_ENTER -> JOYP_BTNS.JP_START;
             default -> JOYP_BTNS.JP_NONE;
