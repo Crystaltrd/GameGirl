@@ -1,6 +1,6 @@
 package Model;
 
-public class NoiseChannel extends Channel {
+public class NoiseChannel  {
     private final HardwareRegisters[] channelRegisters;
 
     private boolean isDacEnable;
