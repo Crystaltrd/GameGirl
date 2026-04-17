@@ -1,6 +1,6 @@
 package Model;
 
-public class WaveChannel extends Channel {
+public class WaveChannel{
     private final HardwareRegisters[] channelRegisters;
     private final byte[] waveRam;
 
