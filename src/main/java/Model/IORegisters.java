@@ -19,15 +19,15 @@ public class IORegisters extends GBMemory {
     }
 
     public byte read(char addr) {
-        if ((addr >= 0x10 && addr <= 0x26) || (addr >= 0x30 && addr <= 0x3F)) {
-            return apu.read(addr);
-        }
+
         if (addr >= HardwareRegisters.DIV.addr && addr <= HardwareRegisters.TAC.addr) {
             return timer.read(addr);
         } else if (addr == HardwareRegisters.IF.addr)
             return IFReg.getByte();
         else if (addr == HardwareRegisters.DMA.addr)
             return dmaRegister.getAddr();
+        else if (((addr >= 0x10 && addr <= 0x26) && (addr != 0x15) )|| (addr >= 0x30 && addr <= 0x3F) )
+            return apu.read(addr);
         else if (addr == HardwareRegisters.LY.addr)
             if (emulator.gameboyDoctor)
                 return LY;
@@ -43,7 +43,7 @@ public class IORegisters extends GBMemory {
             IFReg.setByte(val);
         else if (addr == HardwareRegisters.DMA.addr) {
             dmaRegister.start(val);
-        } else if ((addr >= HardwareRegisters.NR10.addr && addr <= HardwareRegisters.NR52.addr) || (addr >= 0x30 && addr <= 0x3F))
+        } else if (((addr >= 0x10 && addr <= 0x26) && (addr != 0x15) )|| (addr >= 0x30 && addr <= 0x3F))
             apu.write(addr, val);
         else if (addr == HardwareRegisters.LY.addr)
             LY = val;

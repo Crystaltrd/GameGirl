@@ -112,7 +112,7 @@ public class NoiseChannel extends Channel {
             }
         } else {
             System.err.println("Wrong component");
-            System.exit(-1);
+
         }
     }
 }
