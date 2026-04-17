@@ -144,8 +144,13 @@ public class PulseChannels extends Channel {
         dutyStep = (short) ((dutyStep +1) % 8);
     }
 
-    public void getAmplitude(){
-
+    public int getAmplitude(){
+        if(!this.Enable || !this.isDacEnable)
+        {
+            return 0;
+        }
+        int dutyCycleState = this.dutyCycles[this.waveDuty][this.dutyStep];
+        return (dutyCycleState == 1) ? this.currVolume : 0;
 
     }
 
