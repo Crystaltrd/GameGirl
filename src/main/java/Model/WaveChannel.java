@@ -1,5 +1,8 @@
 package Model;
 
+import lombok.Getter;
+
+@Getter
 public class WaveChannel{
     private final HardwareRegisters[] channelRegisters;
     private final byte[] waveRam;
@@ -24,10 +27,6 @@ public class WaveChannel{
 
     public boolean isEnabled() {
         return this.Enable;
-    }
-
-    public int getCurrSample() {
-        return this.currSample;
     }
 
     public void trigger() {
