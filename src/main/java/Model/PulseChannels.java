@@ -1,6 +1,6 @@
 package Model;
 
-public class PulseChannels extends Channel {
+public class PulseChannels  {
     private final HardwareRegisters[] channelRegisters;
     //global activation values?
     private boolean isDacEnable;

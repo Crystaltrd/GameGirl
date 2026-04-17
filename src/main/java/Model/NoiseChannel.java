@@ -2,26 +2,25 @@ package Model;
 
 public class NoiseChannel extends Channel {
     private final HardwareRegisters[] channelRegisters;
-    private static final int[] DIVISOR_TABLE = {8, 16, 32, 48, 64, 80, 96, 112};
+
+    private boolean isDacEnable;
+    private boolean Enable;
+
+    private int lengthEnabled;
+    private int lengthCounter;
 
     private int initialVolume;
-    private int lengthEnabled;
-    private short enveloppeDir;
-    private int initLengthTimer;
-    private short envelopPeriod;
-    private boolean isDacEnable;
-
-    private short clockShift;
-    private short lfsrWidth;
-    private short clockDivider;
-    private double sampleRate;
-
-    private int currfrequency;
-    private int lengthCounter;
-    private boolean Enable;
     private int currVolume;
+    private short enveloppeDir;
+    private short envelopSweepPace;
     private short envelopeCounter;
+    private boolean envelopeEnabled;
+
     private int lfsr = 0x7FFF;
+    private int clockShift;
+    private int clockDivider;
+    private short lfsrWidth;
+    private int currfrequency;
     private int currSample;
 
     public NoiseChannel(HardwareRegisters... reg) {
@@ -32,87 +31,86 @@ public class NoiseChannel extends Channel {
         return this.Enable;
     }
 
-    public int getCurrSample() {
-        return this.currSample;
-    }
-
     public void trigger() {
-        if (!this.isDacEnable) {
-            this.Enable = false;
-            return;
-        }
         this.Enable = true;
         this.lengthCounter = (this.lengthCounter == 0) ? 64 : this.lengthCounter;
-        this.envelopeCounter = this.envelopPeriod;
-        this.currVolume = this.initialVolume;
+        this.currfrequency = getFrequencyTimer();
         this.lfsr = 0x7FFF;
-        this.currfrequency = getFrequencyTimerPeriod();
-        this.currSample = 0;
+        this.envelopeEnabled = true;
+        this.envelopeCounter = this.envelopSweepPace;
+        this.currVolume = this.initialVolume;
+    }
+
+    private int getFrequencyTimer() {
+        int divisor = (this.clockDivider == 0) ? 8 : (this.clockDivider * 16);
+        return divisor << this.clockShift;
     }
 
     public void tick(int cycles) {
-        if (Enable) {
+        if (Enable && isDacEnable) {
             this.currfrequency -= cycles;
-            while (this.currfrequency <= 0) {
+            if (this.currfrequency <= 0) {
                 step();
-                this.currfrequency += getFrequencyTimerPeriod();
+                this.currfrequency += getFrequencyTimer();
             }
         }
     }
 
     public void step() {
-        int shiftedOutBit = this.lfsr & 0x01;
-        int xorBit = (this.lfsr & 0x01) ^ ((this.lfsr >> 1) & 0x01);
-
+        int xorResult = (this.lfsr & 0x01) ^ ((this.lfsr >> 1) & 0x01);
         this.lfsr >>= 1;
-        this.lfsr |= (xorBit << 14);
+        this.lfsr |= (xorResult << 14);
 
         if (this.lfsrWidth == 1) {
-            this.lfsr = (this.lfsr & ~(1 << 6)) | (xorBit << 6);
+            this.lfsr &= ~0x40;
+            this.lfsr |= (xorResult << 6);
         }
 
-        if (shiftedOutBit == 0) {
-            this.currSample = 0;
-        } else {
-            this.currSample = this.currVolume;
+        this.currSample = ((this.lfsr & 0x01) == 0) ? this.currVolume : 0;
+    }
+
+    public int getAmplitude() {
+        return (Enable && isDacEnable) ? this.currSample : 0;
+    }
+
+    public void lengthClock() {
+        if (this.lengthEnabled == 1 && this.lengthCounter > 0) {
+            this.lengthCounter--;
+            if (this.lengthCounter == 0) this.Enable = false;
         }
     }
 
-    private int getFrequencyTimerPeriod() {
-        if (this.clockShift >= 14) {
-            return Integer.MAX_VALUE;
+    public void envelopeClock() {
+        if (this.envelopeEnabled && this.envelopSweepPace > 0) {
+            this.envelopeCounter--;
+            if (this.envelopeCounter <= 0) {
+                this.envelopeCounter = this.envelopSweepPace;
+                if (enveloppeDir == 0 && currVolume > 0) currVolume--;
+                else if (enveloppeDir == 1 && currVolume < 15) currVolume++;
+            }
         }
-        return DIVISOR_TABLE[this.clockDivider & 0x07] << this.clockShift;
     }
 
     public void write(char addr, byte val) {
-        if (addr == (char) HardwareRegisters.NR41.addr) {
-            this.initLengthTimer = val & 0x3F;
-            this.lengthCounter = 64 - this.initLengthTimer;
-        } else if (addr == (char) HardwareRegisters.NR42.addr) {
+        int a = addr & 0xFFFF;
+        if (a == 0xFF20) {
+            this.lengthCounter = 64 - (val & 0x3F);
+        }
+        else if (a == 0xFF21) {
             this.initialVolume = (val >> 4) & 0x0F;
-            this.currVolume = this.initialVolume;
             this.enveloppeDir = (short) ((val >> 3) & 0x01);
-            this.envelopPeriod = (short) (val & 0x07);
+            this.envelopSweepPace = (short) (val & 0x07);
             this.isDacEnable = (val & 0xF8) != 0;
-            if (!this.isDacEnable) {
-                this.Enable = false;
-            }
-        } else if (addr == (char) HardwareRegisters.NR43.addr) {
-            this.clockShift = (short) ((val >> 4) & 0x0F);
+            if (!isDacEnable) Enable = false;
+        }
+        else if (a == 0xFF22) {
+            this.clockShift = (val >> 4) & 0x0F;
             this.lfsrWidth = (short) ((val >> 3) & 0x01);
-            this.clockDivider = (short) (val & 0x07);
-            this.sampleRate = 4_194_304.0 / getFrequencyTimerPeriod();
-        } else if (addr == (char) HardwareRegisters.NR44.addr) {
-            if ((this.lengthEnabled = (val >> 6) & 0x01) == 1) {
-                this.lengthCounter--;
-            }
-            if (((val >> 7) & 0x01) == 1) {
-                trigger();
-            }
-        } else {
-            System.err.println("Wrong component");
-
+            this.clockDivider = val & 0x07;
+        }
+        else if (a == 0xFF23) {
+            this.lengthEnabled = (val >> 6) & 0x01;
+            if (((val >> 7) & 0x01) == 1) trigger();
         }
     }
 }
