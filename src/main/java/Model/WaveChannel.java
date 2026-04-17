@@ -72,6 +72,21 @@ public class WaveChannel extends Channel {
             this.currSample = sample >> 2;
         }
     }
+    public void lengthClock(){
+        if (this.lengthEnabled == 1) {
+            this.lengthCounter--;
+            if (this.lengthCounter <= 0) {
+                this.Enable = false;
+            }
+        }
+    }
+
+    public int getAmplitude(){
+        if (!this.Enable || !this.isDacEnable) {
+            return 0;
+        }
+        return this.currSample;
+    }
 
     public void write(char addr, byte val) {
         if (addr == (char) HardwareRegisters.NR30.addr) {
@@ -89,9 +104,9 @@ public class WaveChannel extends Channel {
             this.sampleRate = (double) 2_097_152 / (2048 - this.periodValue);
         } else if (addr == (char) HardwareRegisters.NR34.addr) {
             this.periodValue = (this.periodValue & 0x00FF) | ((val & 0x07) << 8);
-            if ((this.lengthEnabled = (val >> 6) & 0x01) == 1) {
-                this.lengthCounter--;
-            }
+            this.lengthEnabled = ((val >> 6) & 0x01);
+
+
             if (((val >> 7) & 0x01) == 1) {
                 trigger();
             }

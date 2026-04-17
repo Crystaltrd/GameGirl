@@ -129,6 +129,7 @@ public class APU extends GBMemory {
         if(frameSequenncerStep % 2 == 0){
             pulse1.lengthClock();
             pulse2.lengthClock();
+            waveChannel.lengthClock();
         }
         if(frameSequenncerStep == 7){
             pulse1.envelopeClock();
