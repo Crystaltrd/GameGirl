@@ -11,7 +11,8 @@ import java.io.FileInputStream;
 
 
 public class MainView extends JFrame implements KeyListener {
-    Emulator emulator = new Emulator();
+    Emulator emulator;
+    private boolean restarting = false;
     TileView tileMapViewer;
     GameView gameViewer;
     RegistersView registersView;
@@ -21,67 +22,82 @@ public class MainView extends JFrame implements KeyListener {
     CatridgeView catridgeView;
 
     public MainView() {
-        JFileChooser chooser = new JFileChooser();
-        setLayout(new BorderLayout());
-        emulator.setMainView(this);
-        tileMapViewer = new TileView(emulator);
-        catridgeView = new CatridgeView(emulator);
-        emulator.setCatridgeView(catridgeView);
-        tileCanvas = new JPanel(new BorderLayout());
-        tileCanvas.add(tileMapViewer, BorderLayout.NORTH);
-        tileCanvas.add(catridgeView, BorderLayout.SOUTH);
-        tileCanvas.setBorder(BorderFactory.createLineBorder(Color.black, 2));
-        getContentPane().add(tileCanvas, BorderLayout.EAST);
-        emulator.setTileMapRenderer(tileMapViewer);
-        gameViewer = new GameView(emulator);
-        gameCanvas = new JPanel(new FlowLayout());
-        gameCanvas.setSize(new Dimension(300, 300));
-        gameCanvas.add(gameViewer);
-        gameViewer.setBorder(BorderFactory.createLineBorder(Color.black, 2));
-        getContentPane().add(gameCanvas, BorderLayout.CENTER);
-        emulator.setGameRenderer(gameViewer);
+        int returnValue = 0;
+        do {
+            restarting = false;
+            emulator = new Emulator();
+            JFileChooser chooser = new JFileChooser();
+            setLayout(new BorderLayout());
+            emulator.setMainView(this);
+            tileMapViewer = new TileView(emulator);
+            catridgeView = new CatridgeView(emulator);
+            emulator.setCatridgeView(catridgeView);
+            tileCanvas = new JPanel(new BorderLayout());
+            tileCanvas.add(tileMapViewer, BorderLayout.NORTH);
+            tileCanvas.add(catridgeView, BorderLayout.SOUTH);
+            tileCanvas.setBorder(BorderFactory.createLineBorder(Color.black, 2));
+            getContentPane().add(tileCanvas, BorderLayout.EAST);
+            emulator.setTileMapRenderer(tileMapViewer);
+            gameViewer = new GameView(emulator);
+            gameCanvas = new JPanel(new FlowLayout());
+            gameCanvas.setSize(new Dimension(300, 300));
+            gameCanvas.add(gameViewer);
+            gameViewer.setBorder(BorderFactory.createLineBorder(Color.black, 2));
+            getContentPane().add(gameCanvas, BorderLayout.CENTER);
+            emulator.setGameRenderer(gameViewer);
 
-        registersView = new RegistersView(emulator);
-        getContentPane().add(registersView, BorderLayout.WEST);
-        emulator.setRegisterRenderer(registersView);
-        registersView.setBorder(BorderFactory.createLineBorder(Color.black, 2));
+            registersView = new RegistersView(emulator);
+            getContentPane().add(registersView, BorderLayout.WEST);
+            emulator.setRegisterRenderer(registersView);
+            registersView.setBorder(BorderFactory.createLineBorder(Color.black, 2));
 
 
-        debugScreen = new JTextArea();
-        debugScreen.setMinimumSize(new Dimension(400, 60));
-        debugScreen.setMaximumSize(new Dimension(400, 90));
-        debugScreen.setEditable(false);
-        emulator.setDebugWindow(debugScreen);
+            debugScreen = new JTextArea();
+            debugScreen.setMinimumSize(new Dimension(400, 60));
+            debugScreen.setMaximumSize(new Dimension(400, 90));
+            debugScreen.setEditable(false);
+            emulator.setDebugWindow(debugScreen);
 
-        getContentPane().add(debugScreen, BorderLayout.SOUTH);
-        setSize(1500, 900);
-        setExtendedState(getExtendedState() | JFrame.MAXIMIZED_BOTH);
+            getContentPane().add(debugScreen, BorderLayout.SOUTH);
+            setSize(1500, 900);
+            setExtendedState(getExtendedState() | JFrame.MAXIMIZED_BOTH);
 
-        addKeyListener(this);
-        setFocusable(true);
-        setFocusTraversalKeysEnabled(false);
+            addKeyListener(this);
+            setFocusable(true);
+            setFocusTraversalKeysEnabled(false);
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setVisible(true);
-        try {
-            int returnVal = chooser.showOpenDialog(this);
-            if (returnVal == JFileChooser.APPROVE_OPTION) {
-                System.out.println("You chose to open this file: " +
-                        chooser.getSelectedFile());
-                System.exit(emulator.run(new FileInputStream(chooser.getSelectedFile())));
-            } else {
-                System.exit(0);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setVisible(true);
+            try {
+                int returnVal = chooser.showOpenDialog(this);
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    System.out.println("You chose to open this file: " +
+                            chooser.getSelectedFile());
+                    returnValue = emulator.run(new FileInputStream(chooser.getSelectedFile()));
+                    getContentPane().removeAll();
+                } else {
+                    returnValue = 0;
+                }
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+                returnValue = -1;
             }
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-            System.exit(-1);
-        }
+        } while (restarting);
+        System.exit(returnValue);
 
+    }
 
+    public void restartROM() {
+        emulator.setRunning(false);
+        restarting = true;
     }
 
     @Override
     public void keyTyped(KeyEvent keyEvent) {
+        switch (keyEvent.getKeyChar()) {
+            case 'r' -> restartROM();
+            default -> System.out.println(keyEvent.getKeyChar());
+        }
     }
 
     @Override
@@ -92,7 +108,6 @@ public class MainView extends JFrame implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent keyEvent) {
-
         JOYP_BTNS button = decodeKey(keyEvent);
         emulator.getIoRegisters().getJoyp().setButton(button, true);
     }

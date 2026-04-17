@@ -15,7 +15,6 @@ public class Catridge extends BusMemory {
     private final byte region_code_raw;
     private final byte old_licensee_code_raw;
     private final byte ROM_ver_raw;
-
     private MemoryBankController mbc;
 
 

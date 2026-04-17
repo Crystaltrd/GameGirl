@@ -11,13 +11,13 @@ public abstract class MemoryBankController {
     protected boolean battery;
     protected Catridge catridge;
     protected boolean RAMEnabled = false;
-
+    protected int[] externalRAM;
     MemoryBankController(Catridge catridge, int ROMsz, int RAMsz, boolean battery) {
         this.ROMsz = ROMsz;
         this.RAMsz = RAMsz;
         this.battery = battery;
         this.catridge = catridge;
-
+        externalRAM = new int[RAMsz * 1024];
     }
 
     public static MemoryBankController getInstance(Catridge catridge, MBC_TYPES mbcType, int ROMsz, int RAMsz, boolean battery) {
@@ -53,6 +53,7 @@ class NoMBC extends MemoryBankController {
 
     @Override
     public int read(int address) {
+
         return catridge.data[address] & 0xFF;
     }
 }
@@ -63,12 +64,12 @@ class MBC1 extends MemoryBankController {
     }
 
     @Override
-    public int read(int addr) {
-        return 0;
+    public int read(int address) {
+        return catridge.data[address] & 0xFF;
     }
 
     @Override
-    public void write(int addr, int value) {
+    public void write(int address, int value) {
 
     }
 }
