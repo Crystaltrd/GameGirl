@@ -142,6 +142,30 @@ public class APU extends GBMemory {
         }
 
     }
+    public float[] getOutputSamples() {
+        float left = 0;
+        float right = 0;
+        int nr51 = regs[0x25] & 0xFF;
+        int nr50 = regs[0x24] & 0xFF;
+        int ch1 = pulse1.getAmplitude();
+        int ch2 = pulse2.getAmplitude();
+        int ch3 = waveChannel.getAmplitude();
+        int ch4 = noiseChannel.getAmplitude();
+        if ((nr51 & 0x01) != 0) right += ch1;
+        if ((nr51 & 0x02) != 0) right += ch2;
+        if ((nr51 & 0x04) != 0) right += ch3;
+        if ((nr51 & 0x08) != 0) right += ch4;
+        if ((nr51 & 0x10) != 0) left += ch1;
+        if ((nr51 & 0x20) != 0) left += ch2;
+        if ((nr51 & 0x40) != 0) left += ch3;
+        if ((nr51 & 0x80) != 0) left += ch4;
+
+        float volumeLeft = ((nr50 >> 4) & 0x07) + 1;
+        float volumeRight= (nr50 & 0x07) + 1;
+        float sampleScale = 128.0f;
+
+        return new float[] {(left * volumeLeft) /sampleScale,(right * volumeRight) / sampleScale};
+    }
 
 
     public void tick() {
