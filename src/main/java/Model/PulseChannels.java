@@ -104,9 +104,36 @@ public class PulseChannels extends Channel {
         }
     }
     public void sweepClock(){
+        if (this.sweepPace == 0) {
+            return;
+        }
+        this.sweePaceCounter--;
+        if (this.sweePaceCounter <= 0) {
+            this.sweePaceCounter = this.sweepPace;
+
+            int nextPeriod;
+
+            if (this.sweepDirection == 0) {
+                nextPeriod = this.periodValue + (this.periodValue >> this.individualStep);
+            } else {
+                nextPeriod = this.periodValue - (this.periodValue >> this.individualStep);
+            }
+
+            if (nextPeriod > 2047) {
+                this.Enable = false;
+            } else if (this.individualStep > 0) {
+                this.periodValue = nextPeriod;
+
+                this.currfrequency = (2048 - this.periodValue) * 4;
 
 
-            //sweep clock
+                if ((this.periodValue + (this.periodValue >> this.individualStep)) > 2047&& (this.sweepDirection == 0)) {
+                    this.Enable = false;
+                }
+            }
+        }
+
+
 
     }
 
@@ -115,10 +142,10 @@ public class PulseChannels extends Channel {
 
     public void step(){
         dutyStep = (short) ((dutyStep +1) % 8);
-        getAmplitude();
     }
 
     public void getAmplitude(){
+
 
     }
 
