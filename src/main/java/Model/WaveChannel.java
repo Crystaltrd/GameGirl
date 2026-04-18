@@ -87,31 +87,36 @@ public class WaveChannel{
         return this.currSample;
     }
 
-    public void write(char addr, byte val) {
-        if (addr == (char) HardwareRegisters.NR30.addr) {
-            this.isDacEnable = ((val >> 7) & 0x01) == 1;
-            if (!this.isDacEnable) {
-                this.Enable = false;
+    public void write(int addr, int val) {
+        HardwareRegisters reg = HardwareRegisters.findByValue(addr);
+
+        switch (reg) {
+            case NR30 -> {
+                this.isDacEnable = ((val >> 7) & 0x01) == 1;
+                if (!this.isDacEnable) {
+                    this.Enable = false;
+                }
             }
-        } else if (addr == (char) HardwareRegisters.NR31.addr) {
-            this.initLengthTimer = val & 0xFF;
-            this.lengthCounter = 256 - this.initLengthTimer;
-        } else if (addr == (char) HardwareRegisters.NR32.addr) {
-            this.outputLevel = (short) ((val >> 5) & 0x03);
-        } else if (addr == (char) HardwareRegisters.NR33.addr) {
-            this.periodValue = (this.periodValue & 0x0700) | (val & 0xFF);
-            this.sampleRate = (double) 2_097_152 / (2048 - this.periodValue);
-        } else if (addr == (char) HardwareRegisters.NR34.addr) {
-            this.periodValue = (this.periodValue & 0x00FF) | ((val & 0x07) << 8);
-            this.lengthEnabled = ((val >> 6) & 0x01);
-
-
-            if (((val >> 7) & 0x01) == 1) {
-                trigger();
+            case NR31 -> {
+                this.initLengthTimer = val & 0xFF;
+                this.lengthCounter = 256 - this.initLengthTimer;
             }
-        } else {
-            System.err.println("Wrong component");
+            case NR32 ->
+                this.outputLevel = (short) ((val >> 5) & 0x03);
 
+            case NR33 ->
+                this.periodValue = (this.periodValue & 0x0700) | (val & 0xFF);
+
+            case NR34 -> {
+                this.periodValue = (this.periodValue & 0x00FF) | ((val & 0x07) << 8);
+                this.lengthEnabled = (val >> 6) & 0x01;
+
+                if (((val >> 7) & 0x01) == 1) {
+                    trigger();
+                }
+            }
+            case null, default -> {
+            }
+        }
         }
     }
-}

@@ -91,26 +91,35 @@ public class NoiseChannel  {
         }
     }
 
-    public void write(char addr, byte val) {
-        int a = addr & 0xFFFF;
-        if (a == 0xFF20) {
-            this.lengthCounter = 64 - (val & 0x3F);
-        }
-        else if (a == 0xFF21) {
-            this.initialVolume = (val >> 4) & 0x0F;
-            this.enveloppeDir = (short) ((val >> 3) & 0x01);
-            this.envelopSweepPace = (short) (val & 0x07);
-            this.isDacEnable = (val & 0xF8) != 0;
-            if (!isDacEnable) Enable = false;
-        }
-        else if (a == 0xFF22) {
-            this.clockShift = (val >> 4) & 0x0F;
-            this.lfsrWidth = (short) ((val >> 3) & 0x01);
-            this.clockDivider = val & 0x07;
-        }
-        else if (a == 0xFF23) {
-            this.lengthEnabled = (val >> 6) & 0x01;
-            if (((val >> 7) & 0x01) == 1) trigger();
+    public void write(int addr, int val) {
+        HardwareRegisters reg = HardwareRegisters.findByValue(addr);
+
+        switch (reg) {
+            case NR41 -> {
+                this.lengthCounter = 64 - (val & 0x3F);
+            }
+            case NR42 -> {
+                this.initialVolume = (val >> 4) & 0x0F;
+                this.enveloppeDir = (short) ((val >> 3) & 0x01);
+                this.envelopSweepPace = (short) (val & 0x07);
+                this.isDacEnable = (val & 0xF8) != 0;
+                if (!isDacEnable) {
+                    this.Enable = false;
+                }
+            }
+            case NR43 -> {
+                this.clockShift = (val >> 4) & 0x0F;
+                this.lfsrWidth = (short) ((val >> 3) & 0x01);
+                this.clockDivider = val & 0x07;
+            }
+            case NR44 -> {
+                this.lengthEnabled = (val >> 6) & 0x01;
+                if (((val >> 7) & 0x01) == 1) {
+                    trigger();
+                }
+            }
+            case null, default -> {
+            }
         }
     }
 }

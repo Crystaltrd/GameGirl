@@ -26,6 +26,7 @@ public class Emulator {
     private Catridge catridge;
     private CPU cpu;
     private PPU ppu;
+    private APU apu;
     private Timer timer;
     private IORegisters ioRegisters;
     private byte[] WRAM = new byte[0x2000];
@@ -81,6 +82,7 @@ public class Emulator {
     public void init() {
         cpu = new CPU(this);
         ppu = new PPU(this);
+        apu = new APU(this);
         timer = new Timer(this);
         ioRegisters = new IORegisters(this); 
     }
@@ -93,6 +95,7 @@ public class Emulator {
                 ticks++;
                 timer.tick();
                 ppu.tick();
+                apu.tick();
             }
             ioRegisters.getDma().tick();
 

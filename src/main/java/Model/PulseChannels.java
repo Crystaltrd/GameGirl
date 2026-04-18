@@ -145,6 +145,7 @@ public class PulseChannels  {
     }
 
     public int getAmplitude(){
+
         if(!this.Enable || !this.isDacEnable)
         {
             return 0;
@@ -155,42 +156,45 @@ public class PulseChannels  {
     }
 
     //next need to differentiate the two states when the channel is on or off on writing
-    public void write(char addr, byte val){
-        if(addr == (char) HardwareRegisters.NR10.addr){
-            this.sweepPace = (val >> 4) & 0x07;
-            this.sweePaceCounter = this.sweepPace;
-            this.sweepDirection = (short) ((val >> 3) & 0x01);
-            this.individualStep = val & 0x07;
-            return;
-        }
-        else if((addr == (char) HardwareRegisters.NR11.addr) || addr == (char) HardwareRegisters.NR21.addr){
-            this.waveDuty = (short) ((val >> 6) & 0x03);
-            this.initLengthTimer = val & 0x3F;
-            this.lengthCounter = 64 - (val & 0x3F);
-            return;
-        }
-        else if((addr == (char) HardwareRegisters.NR12.addr) || addr == (char) HardwareRegisters.NR22.addr){
-            this.initialVolume = (val >> 4) & 0x0F;
-            this.currVolume = this.initialVolume; // not sure
-            this.enveloppeDir = (short) ((val >> 3 ) & 0x01);
-            if ((this.envelopSweepPace = (short) (val & 0x07) ) == 0) this.envelopeEnabled = false; else envelopeEnabled = true;
-            this.isDacEnable = (val & 0xF8) != 0;
-            if(!isDacEnable){this.Enable = false;}
-            return;
-        }
-        else if((addr == (char) HardwareRegisters.NR13.addr) || addr == (char) HardwareRegisters.NR23.addr){
-            this.periodValue = (this.periodValue & 0x0700) | (val & 0xFF);
-            this.sampleRate = (double) (1_048_576) /(2048-this.periodValue);
-            return;
-        }
-        else if((addr == (char) HardwareRegisters.NR14.addr) || addr == (char) HardwareRegisters.NR24.addr){
-            this.periodValue = (this.periodValue & 0x00FF) | ((val & 0x07) << 8);
-            this.lengthEnabled = (val >> 6) & 0x01;
-            if(((val >> 7 ) & 0x01) == 1){trigger();}
-            return;
+    public void write(int addr, int val){
+        HardwareRegisters a = HardwareRegisters.findByValue(addr);
+        switch (a) {
+            case NR10 -> {
+                this.sweepPace = (val >> 4) & 0x07;
+                this.sweePaceCounter = this.sweepPace;
+                this.sweepDirection = (short) ((val >> 3) & 0x01);
+                this.individualStep = val & 0x07;
+            }
+            case NR11, NR21 -> {
+                this.waveDuty = (short) ((val >> 6) & 0x03);
+                this.initLengthTimer = val & 0x3F;
+                this.lengthCounter = 64 - (val & 0x3F);
+            }
+            case NR12, NR22 -> {
+                this.initialVolume = (val >> 4) & 0x0F;
+
+                this.enveloppeDir = (short) ((val >> 3) & 0x01);
+                this.envelopSweepPace = (short) (val & 0x07);
+                this.envelopeEnabled = (this.envelopSweepPace != 0);
+
+                this.isDacEnable = (val & 0xF8) != 0;
+                if (!isDacEnable) this.Enable = false;
+            }
+            case NR13, NR23 -> {
+                this.periodValue = (this.periodValue & 0x0700) | (val & 0xFF);
+            }
+            case NR14, NR24 -> {
+                this.periodValue = (this.periodValue & 0x00FF) | ((val & 0x07) << 8);
+                this.lengthEnabled = (val >> 6) & 0x01;
+                if (((val >> 7) & 0x01) == 1) {
+                    trigger();
+                }
+            }
+            case null, default ->  System.err.println("Wrong component");
+
         }
 
-        System.err.println("Wrong component");
+
 
 
 

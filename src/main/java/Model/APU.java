@@ -2,10 +2,9 @@ package Model;
 
 import java.util.Arrays;
 import javax.sound.sampled.*;
-import javax.xml.transform.Source;
 
-public class APU extends GBMemory {
-    private final EmulationContext ctx;
+public class APU extends BusMemory {
+    private final Emulator ctx;
 
     public final PulseChannels pulse1 = new PulseChannels(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
     private final PulseChannels pulse2 = new PulseChannels(null,HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
@@ -31,15 +30,15 @@ public class APU extends GBMemory {
 
 
 
-    APU(EmulationContext ctx) {
+    APU(Emulator ctx) {
         this.ctx = ctx;
         regs[HardwareRegisters.NR52.addr & 0xFF] = (byte) 0x80;
         try {
             this.line = AudioSystem.getSourceDataLine(format);
-            this.line.open(format, 4096); // Buffer de 4096 octets pour la stabilité
+            this.line.open(format, 4096);
             this.line.start();
         } catch (LineUnavailableException e) {
-            System.err.println("Impossible d'initialiser la ligne audio.");
+            System.err.println("Audio line unreachable");
             e.printStackTrace();
         }
     }
@@ -53,47 +52,46 @@ public class APU extends GBMemory {
         
     }
 
-    @Override
-    public byte read(char addr) {
-        int a = addr & 0xFF;
-        if (a >= 0x30 && a <= 0x3F) {
-            return waveRam[a - 0x30];
+    public int read(int addr) {
+
+        if (addr >= 0x30 && addr <= 0x3F) {
+            return waveRam[addr - 0x30];
         }
-        if (a >= 0x10 && a <= 0x26 && a != 0x15) {
-            if (a == (HardwareRegisters.NR52.addr & 0xFF)) {
+        HardwareRegisters add = HardwareRegisters.findByValue(addr);
+        int offset = addr & 0xFF;
+
+            if (addr == (HardwareRegisters.NR52.addr & 0xFF)) {
                 int channelFlags = 0;
                 if (pulse1.isEnabled()) channelFlags |= 0x01;
                 if (pulse2.isEnabled()) channelFlags |= 0x02;
                 if (waveChannel.isEnabled()) channelFlags |= 0x04;
                 if (noiseChannel.isEnabled()) channelFlags |= 0x08;
-                return (byte) ((regs[a] & 0x80) | 0x70 | channelFlags);
+                return  ((regs[offset] & 0x80) | 0x70 | channelFlags);
             }
 
-            return (byte) switch (addr){
-                   // case HardwareRegisters.NR13.addr, HardwareRegisters.NR23.addr, HardwareRegisters.NR31.addr, HardwareRegisters.NR33.addr, HardwareRegisters.NR41.addr -> 0xFF;
-                    case 0x13,0x18,0x1B,0x1D,0x20 -> 0xFF;
-                    case 0x10 -> regs[addr] | UNUSED_BITS_NR10;
-                    case 0x11, 0x16 -> regs[addr] | UNUSED_BITS_NRX1;
-                    case 0x14, 0x1E, 0x19, 0x23 -> regs[addr] | UNUSED_BITS_NRX4;
-                    case 0x1A -> regs[addr] | UNUSED_BITS_NR30;
-                    case 0x1C -> regs[addr] | UNUSED_BITS_NR32;
-                    default -> regs[addr];
+        return switch (add) {
+            case NR10 -> regs[offset] | UNUSED_BITS_NR10;
+            case NR11, NR21 -> regs[offset] | UNUSED_BITS_NRX1;
+            case NR14, NR24, NR34, NR44 -> regs[offset] | UNUSED_BITS_NRX4;
+            case NR30 -> regs[offset] | UNUSED_BITS_NR30;
+            case NR32 -> regs[offset] | UNUSED_BITS_NR32;
+            case NR13, NR23, NR31, NR33, NR41 -> 0xFF;
+            case null, default -> regs[offset] & 0xFF; //still not sure
 
         };
-    }
-        return (byte) 0xFF;
+
         }
 
-    @Override
-    public void write(char addr, byte val) {
-        int a = addr & 0xFF;
-        if (a >= 0x30 && a <= 0x3F) {
-            waveRam[a - 0x30] = val;
+    public void write(int addr, int val) {
+        int a = addr &  0xFFFF;
+        if (a >= 0xFF30 && a <= 0xFF3F) {
+            waveRam[a - 0xFF30] = (byte) val;
             return;
         }
+        HardwareRegisters add = HardwareRegisters.findByValue(a);
+        int offset = addr & 0xFF;
 
-
-            if (a == (HardwareRegisters.NR52.addr & 0xFF)) {
+            if (add == HardwareRegisters.NR52) {
                 boolean wasEnabled = isEnabled();
                 regs[a] = (byte) (val & 0x80);
                 if (wasEnabled && !isEnabled()) {
@@ -125,7 +123,7 @@ public class APU extends GBMemory {
                 return;
             }
 
-            regs[a] = val;
+            regs[offset] = (byte) val;
         }
     }
     public void frameSequencer(){
@@ -182,12 +180,11 @@ public class APU extends GBMemory {
         return new float[] {(left * volumeLeft) /sampleScale,(right * volumeRight) / sampleScale};
     }
 
-
     public void tick() {
         tCycles++;
         if(tCycles >= 95){
             tCycles -= 95;
-            float sample[]  = getOutputSamples();
+            float[] sample  = getOutputSamples();
 
             short left = (short) (sample[0] * 32767);
             short right = (short) (sample[1] * 32767);
