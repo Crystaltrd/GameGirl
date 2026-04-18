@@ -1,62 +1,63 @@
 package Model;
 
 import lombok.Getter;
+import lombok.Setter;
 
+@Setter
 @Getter
-public class Timer extends GBMemory {
-    private final EmulationContext ctx;
-    private long div = 0xAC00;
-    private char tima;
-    private byte tma;
-    private byte tac = (byte) 0xF8;
+public class Timer extends BusMemory {
+    private Emulator context;
+    private int divReg = 0xAC00;
+    private int timaReg;
+    private int tmaReg;
+    private int tacReg = 0xF8;
 
-    Timer(EmulationContext ctx) {
-        this.ctx = ctx;
-    }
-
-    public byte read(char addr) {
-        if (addr == HardwareRegisters.DIV.addr)
-            return (byte) (div >> 8);
-        else if (addr == HardwareRegisters.TIMA.addr)
-            return (byte) (tima & 0xFF);
-        else if (addr == HardwareRegisters.TMA.addr)
-            return tma;
-        else if (addr == HardwareRegisters.TAC.addr)
-            return tac;
-        return 0;
-    }
-
-    public void write(char addr, byte val) {
-        if (addr == HardwareRegisters.DIV.addr)
-            div = 0;
-        else if (addr == HardwareRegisters.TIMA.addr)
-            tima = (char) val;
-        else if (addr == HardwareRegisters.TMA.addr)
-            tma = val;
-        else if (addr == HardwareRegisters.TAC.addr)
-            tac = val;
+    Timer(Emulator context) {
+        this.context = context;
     }
 
     public void tick() {
-        long prev_div = div;
+        int prev_div = divReg;
+        divReg++;
 
-        div++;
-
-        boolean timer_update = switch (tac & (0b11)) {
-            case 0b00 -> ((prev_div & (1 << 9)) != 0) && ((div & (1 << 9)) == 0);
-            case 0b01 -> ((prev_div & (1 << 3)) != 0) && ((div & (1 << 3)) == 0);
-            case 0b10 -> ((prev_div & (1 << 5)) != 0) && ((div & (1 << 5)) == 0);
-            case 0b11 -> ((prev_div & (1 << 7)) != 0) && ((div & (1 << 7)) == 0);
+        boolean timer_update = switch (tacReg & 0b11) {
+            case 0 -> ((prev_div & (1 << 9)) != 0) && ((divReg & (1 << 9)) == 0);
+            case 1 -> ((prev_div & (1 << 3)) != 0) && ((divReg & (1 << 3)) == 0);
+            case 2 -> ((prev_div & (1 << 5)) != 0) && ((divReg & (1 << 5)) == 0);
+            case 3 -> ((prev_div & (1 << 7)) != 0) && ((divReg & (1 << 7)) == 0);
             default -> false;
         };
-
-        if (timer_update && (tac & (1 << 2)) != 0) {
-            tima++;
-
-            if (tima == 0xFF) {
-                tima = (char) tma;
-                ctx.requestInterupt(InterruptSource.IT_TIMER);
+        if (timer_update && (tacReg & (1 << 2)) != 0) {
+            timaReg++;
+            if (timaReg == 0xFF) {
+                timaReg = tmaReg & 0xFF;
+                context.getCpu().setTimerInt(true);
             }
         }
+    }
+
+    @Override
+    public int read(int address) {
+        return switch (HardwareRegisters.findByValue(address)) {
+            case DIV -> (divReg >> 8) & 0xFF;
+            case TIMA -> timaReg;
+            case TMA -> tmaReg;
+            case TAC -> tacReg;
+            case null, default -> 0;
+        };
+    }
+
+    @Override
+    public void write(int address, int value) {
+        switch (HardwareRegisters.findByValue(address)) {
+            case DIV -> divReg = 0;
+            case TIMA -> timaReg = value;
+            case TMA -> tmaReg = value;
+            case TAC -> tacReg = value;
+            case null, default -> {
+                return;
+            }
+        }
+        ;
     }
 }

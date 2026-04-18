@@ -9,9 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.fasterxml.jackson.core:jackson-core:2.21.2")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.21")
+    implementation("org.apache.commons:commons-lang3:3.20.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.0-M1")
     testImplementation("org.junit.jupiter:junit-jupiter-params:6.1.0-M1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
