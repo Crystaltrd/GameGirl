@@ -1,6 +1,8 @@
 package Model;
 
 import java.util.Arrays;
+import javax.sound.sampled.*;
+import javax.xml.transform.Source;
 
 public class APU extends GBMemory {
     private final EmulationContext ctx;
@@ -23,10 +25,23 @@ public class APU extends GBMemory {
     private static final int UNUSED_BITS_NR32 = 0b10011111;
     private static final int UNUSED_BITS_NR52 = 0b01110000;
 
+    //audio
+    AudioFormat format = new AudioFormat(44100,16,2,true, false);
+    SourceDataLine line;
+
+
 
     APU(EmulationContext ctx) {
         this.ctx = ctx;
         regs[HardwareRegisters.NR52.addr & 0xFF] = (byte) 0x80;
+        try {
+            this.line = AudioSystem.getSourceDataLine(format);
+            this.line.open(format, 4096); // Buffer de 4096 octets pour la stabilité
+            this.line.start();
+        } catch (LineUnavailableException e) {
+            System.err.println("Impossible d'initialiser la ligne audio.");
+            e.printStackTrace();
+        }
     }
 
     private boolean isEnabled() {
@@ -170,10 +185,29 @@ public class APU extends GBMemory {
 
     public void tick() {
         tCycles++;
+        if(tCycles >= 95){
+            tCycles -= 95;
+            float sample[]  = getOutputSamples();
+
+            short left = (short) (sample[0] * 32767);
+            short right = (short) (sample[1] * 32767);
+            byte[] buffer =  new byte[4];
+            buffer[0] = (byte)(left & 0xFF);
+            buffer[1] = (byte)((left >> 8) & 0xFF);
+            buffer[2] = (byte)(right & 0xFF);
+            buffer[3] = (byte)((right >> 8) & 0xFF);
+            if (line != null && isEnabled()) {
+                line.write(buffer, 0, 4);
+            }
+
+
+        }
+
         frameSequencer();
         pulse1.tick(1);
         pulse2.tick(1);
         waveChannel.tick(1);
         noiseChannel.tick(1);
+
     }
 }
