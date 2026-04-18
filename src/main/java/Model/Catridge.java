@@ -111,10 +111,6 @@ public class Catridge extends BusMemory {
     }
 
     private int resolvedRAMSizeBytes() {
-        return switch (cartridgeTypeInfo.mbcType()) {
-            case MBC_6, HUC3 -> Math.max(headerRAMSizeBytes, 32 * 1024);
-            case POCKET_CAMERA -> Math.max(headerRAMSizeBytes, 128 * 1024);
-            default -> cartridgeTypeInfo.hasRam() ? headerRAMSizeBytes : 0;
-        };
+        return cartridgeTypeInfo.hasRam() ? headerRAMSizeBytes : 0;
     }
 }
