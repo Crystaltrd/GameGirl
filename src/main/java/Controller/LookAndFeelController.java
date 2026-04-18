@@ -22,6 +22,6 @@ public class LookAndFeelController {
             0x88c070,
             0xe0f8d0
     };
-    public static int[] defaultPalette = paletteAlt;
+    public static int[] defaultPalette = paletteGrayscale;
     
 }

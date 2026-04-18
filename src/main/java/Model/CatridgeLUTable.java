@@ -1,46 +1,87 @@
 package Model;
 
 public class CatridgeLUTable {
-    public static String[] cartridge_types = {
-            "ROM ONLY",
-            "MBC1",
-            "MBC1+RAM",
-            "MBC1+RAM+BATTERY",
-            "0x04 ???",
-            "MBC2",
-            "MBC2+BATTERY",
-            "0x07 ???",
-            "ROM+RAM 1",
-            "ROM+RAM+BATTERY 1",
-            "0x0A ???",
-            "MMM01",
-            "MMM01+RAM",
-            "MMM01+RAM+BATTERY",
-            "0x0E ???",
-            "MBC3+TIMER+BATTERY",
-            "MBC3+TIMER+RAM+BATTERY 2",
-            "MBC3",
-            "MBC3+RAM 2",
-            "MBC3+RAM+BATTERY 2",
-            "0x14 ???",
-            "0x15 ???",
-            "0x16 ???",
-            "0x17 ???",
-            "0x18 ???",
-            "MBC5",
-            "MBC5+RAM",
-            "MBC5+RAM+BATTERY",
-            "MBC5+RUMBLE",
-            "MBC5+RUMBLE+RAM",
-            "MBC5+RUMBLE+RAM+BATTERY",
-            "0x1F ???",
-            "MBC6",
-            "0x21 ???",
-            "MBC7+SENSOR+RUMBLE+RAM+BATTERY"
-    };
-    public static int[] RAMSizes = {
-            0, 0, 8, 32, 128, 64
-    };
+    public static CartridgeTypeInfo getCartridgeTypeInfo(int code) {
+        return switch (code) {
+            case 0x00 -> new CartridgeTypeInfo("ROM ONLY", MBC_TYPES.NO_MBC, false, false, false, false, false);
+            case 0x01 -> new CartridgeTypeInfo("MBC1", MBC_TYPES.MBC_1, false, false, false, false, false);
+            case 0x02 -> new CartridgeTypeInfo("MBC1+RAM", MBC_TYPES.MBC_1, false, true, false, false, false);
+            case 0x03 -> new CartridgeTypeInfo("MBC1+RAM+BATTERY", MBC_TYPES.MBC_1, true, true, false, false, false);
+            case 0x05 -> new CartridgeTypeInfo("MBC2", MBC_TYPES.MBC_2, false, false, false, false, false);
+            case 0x06 -> new CartridgeTypeInfo("MBC2+BATTERY", MBC_TYPES.MBC_2, true, false, false, false, false);
+            case 0x08 -> new CartridgeTypeInfo("ROM+RAM", MBC_TYPES.NO_MBC, false, true, false, false, false);
+            case 0x09 -> new CartridgeTypeInfo("ROM+RAM+BATTERY", MBC_TYPES.NO_MBC, true, true, false, false, false);
+            case 0x0B -> new CartridgeTypeInfo("MMM01", MBC_TYPES.MMM01, false, false, false, false, false);
+            case 0x0C -> new CartridgeTypeInfo("MMM01+RAM", MBC_TYPES.MMM01, false, true, false, false, false);
+            case 0x0D -> new CartridgeTypeInfo("MMM01+RAM+BATTERY", MBC_TYPES.MMM01, true, true, false, false, false);
+            case 0x0F -> new CartridgeTypeInfo("MBC3+TIMER+BATTERY", MBC_TYPES.MBC_3, true, false, true, false, false);
+            case 0x10 ->
+                    new CartridgeTypeInfo("MBC3+TIMER+RAM+BATTERY", MBC_TYPES.MBC_3, true, true, true, false, false);
+            case 0x11 -> new CartridgeTypeInfo("MBC3", MBC_TYPES.MBC_3, false, false, false, false, false);
+            case 0x12 -> new CartridgeTypeInfo("MBC3+RAM", MBC_TYPES.MBC_3, false, true, false, false, false);
+            case 0x13 -> new CartridgeTypeInfo("MBC3+RAM+BATTERY", MBC_TYPES.MBC_3, true, true, false, false, false);
+            case 0x19 -> new CartridgeTypeInfo("MBC5", MBC_TYPES.MBC_5, false, false, false, false, false);
+            case 0x1A -> new CartridgeTypeInfo("MBC5+RAM", MBC_TYPES.MBC_5, false, true, false, false, false);
+            case 0x1B -> new CartridgeTypeInfo("MBC5+RAM+BATTERY", MBC_TYPES.MBC_5, true, true, false, false, false);
+            case 0x1C -> new CartridgeTypeInfo("MBC5+RUMBLE", MBC_TYPES.MBC_5, false, false, false, true, false);
+            case 0x1D -> new CartridgeTypeInfo("MBC5+RUMBLE+RAM", MBC_TYPES.MBC_5, false, true, false, true, false);
+            case 0x1E ->
+                    new CartridgeTypeInfo("MBC5+RUMBLE+RAM+BATTERY", MBC_TYPES.MBC_5, true, true, false, true, false);
+            case 0x20 -> new CartridgeTypeInfo("MBC6", MBC_TYPES.MBC_6, false, true, false, false, false);
+            case 0x22 ->
+                    new CartridgeTypeInfo("MBC7+SENSOR+RUMBLE+RAM+BATTERY", MBC_TYPES.MBC_7, true, false, false, true, true);
+            case 0xFC ->
+                    new CartridgeTypeInfo("POCKET CAMERA", MBC_TYPES.POCKET_CAMERA, true, true, false, false, false);
+            case 0xFD -> new CartridgeTypeInfo("TAMA5", null, true, false, false, false, false);
+            case 0xFE -> new CartridgeTypeInfo("HuC3", MBC_TYPES.HUC3, true, true, false, false, false);
+            case 0xFF -> new CartridgeTypeInfo("HuC1+RAM+BATTERY", MBC_TYPES.HUC1, true, true, false, false, false);
+            default ->
+                    new CartridgeTypeInfo(String.format("UNKNOWN (0x%02X)", code), null, false, false, false, false, false);
+        };
+    }
+
+    public static String getCartridgeTypeName(int code) {
+        return getCartridgeTypeInfo(code).name();
+    }
+
+    public static int getROMSizeBytes(int code) {
+        return switch (code) {
+            case 0x00 -> 32 * 1024;
+            case 0x01 -> 64 * 1024;
+            case 0x02 -> 128 * 1024;
+            case 0x03 -> 256 * 1024;
+            case 0x04 -> 512 * 1024;
+            case 0x05 -> 1024 * 1024;
+            case 0x06 -> 2 * 1024 * 1024;
+            case 0x07 -> 4 * 1024 * 1024;
+            case 0x08 -> 8 * 1024 * 1024;
+            case 0x52 -> 72 * 16 * 1024;
+            case 0x53 -> 80 * 16 * 1024;
+            case 0x54 -> 96 * 16 * 1024;
+            default -> 0;
+        };
+    }
+
+    public static int getRAMSizeBytes(int code) {
+        return switch (code) {
+            case 0x00 -> 0;
+            case 0x01 -> 0;
+            case 0x02 -> 8 * 1024;
+            case 0x03 -> 32 * 1024;
+            case 0x04 -> 128 * 1024;
+            case 0x05 -> 64 * 1024;
+            default -> 0;
+        };
+    }
+
+    public record CartridgeTypeInfo(String name,
+                                    MBC_TYPES mbcType,
+                                    boolean hasBattery,
+                                    boolean hasRam,
+                                    boolean hasTimer,
+                                    boolean hasRumble,
+                                    boolean hasSensor) {
+    }
 
     public static String getOldLicensee(int n) {
         return switch (n) {

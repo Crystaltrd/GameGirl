@@ -106,7 +106,7 @@ public class Emulator {
         else if (Commons.isBetween(address, 0x8000, 0x9FFF))
             return ppu.read(address);
         else if (Commons.isBetween(address, 0xA000, 0xBFFF))
-            return 0; //TODO
+            return catridge.readRAM(address);
         else if (Commons.isBetween(address, 0xC000, 0xDFFF))
             return WRAM[address - 0xC000] & 0xFF;
         else if (Commons.isBetween(address, 0xE000, 0xFDFF))
@@ -144,7 +144,7 @@ public class Emulator {
         else if (Commons.isBetween(address, 0x8000, 0x9FFF))
             ppu.write(address, value);
         else if (Commons.isBetween(address, 0xA000, 0xBFFF))
-            return;
+            catridge.writeRAM(address, value);
         else if (Commons.isBetween(address, 0xC000, 0xDFFF)) {
             WRAM[address - 0xC000] = (byte) value;
         } else if (Commons.isBetween(address, 0xE000, 0xFDFF))

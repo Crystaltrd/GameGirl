@@ -11,4 +11,5 @@ public enum MBC_TYPES {
     MMM01,
     HUC1,
     HUC3,
+    POCKET_CAMERA,
 }

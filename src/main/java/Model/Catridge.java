@@ -8,66 +8,76 @@ public class Catridge extends BusMemory {
     public final byte[] data;
     private final byte[] title_raw = new byte[0x143 - 0x134 + 1];
     private final byte[] new_licensee_code_raw = new byte[0x145 - 0x144 + 1];
-    private final byte sgb_flag_raw;
-    private final byte cartridge_type_raw;
-    private final byte ROM_size_raw;
-    private final byte RAM_size_raw;
-    private final byte region_code_raw;
-    private final byte old_licensee_code_raw;
-    private final byte ROM_ver_raw;
-    private MemoryBankController mbc;
-
+    private final int sgb_flag_raw;
+    private final int cartridge_type_raw;
+    private final int ROM_size_raw;
+    private final int RAM_size_raw;
+    private final int region_code_raw;
+    private final int old_licensee_code_raw;
+    private final int ROM_ver_raw;
+    private final int headerROMSizeBytes;
+    private final int headerRAMSizeBytes;
+    private final CatridgeLUTable.CartridgeTypeInfo cartridgeTypeInfo;
+    private final MemoryBankController mbc;
 
     public Catridge(InputStream romFile) throws IOException {
         data = romFile.readAllBytes();
+        if (data.length <= 0x14C) {
+            throw new IllegalArgumentException("ROM file is too small to contain a valid Game Boy header");
+        }
+
         System.arraycopy(data, 0x0134, title_raw, 0, title_raw.length);
         System.arraycopy(data, 0x0144, new_licensee_code_raw, 0, new_licensee_code_raw.length);
-        sgb_flag_raw = data[0x0146];
-        cartridge_type_raw = data[0x0147];
-        ROM_size_raw = data[0x0148];
-        RAM_size_raw = data[0x0149];
-        region_code_raw = data[0x014A];
-        old_licensee_code_raw = data[0x014B];
-        ROM_ver_raw = data[0x014C];
-        if (cartridge_type_raw == 0)
-            mbc = MemoryBankController.getInstance(this, MBC_TYPES.NO_MBC, ROM_size_raw, RAM_size_raw, false);
-        else if (Commons.isBetween(cartridge_type_raw, 0x19, 0x1E)) {
-            mbc = MemoryBankController.getInstance(this, MBC_TYPES.MBC_5, RAM_size_raw, ROM_size_raw, false);
+        sgb_flag_raw = Byte.toUnsignedInt(data[0x0146]);
+        cartridge_type_raw = Byte.toUnsignedInt(data[0x0147]);
+        ROM_size_raw = Byte.toUnsignedInt(data[0x0148]);
+        RAM_size_raw = Byte.toUnsignedInt(data[0x0149]);
+        region_code_raw = Byte.toUnsignedInt(data[0x014A]);
+        old_licensee_code_raw = Byte.toUnsignedInt(data[0x014B]);
+        ROM_ver_raw = Byte.toUnsignedInt(data[0x014C]);
+
+        cartridgeTypeInfo = CatridgeLUTable.getCartridgeTypeInfo(cartridge_type_raw);
+        if (cartridgeTypeInfo.mbcType() == null) {
+            throw new IllegalArgumentException("Unsupported cartridge type: " + cartridgeTypeInfo.name());
         }
+
+        headerROMSizeBytes = CatridgeLUTable.getROMSizeBytes(ROM_size_raw);
+        headerRAMSizeBytes = CatridgeLUTable.getRAMSizeBytes(RAM_size_raw);
+        mbc = MemoryBankController.getInstance(this, cartridgeTypeInfo, resolvedROMSizeBytes(), resolvedRAMSizeBytes());
     }
 
     public String getTitle() {
-        return new String(title_raw, StandardCharsets.US_ASCII).replaceAll("[^a-zA-Z]", "");
+        String title = new String(title_raw, StandardCharsets.US_ASCII);
+        int end = title.indexOf('\0');
+        return (end >= 0 ? title.substring(0, end) : title).trim();
     }
 
     public String getLicensee() {
-        String licensee;
         if (old_licensee_code_raw == 0x33) {
+            String code = new String(new_licensee_code_raw, StandardCharsets.US_ASCII).trim();
             try {
-                licensee = CatridgeLUTable.getNewLicensee(Integer.parseInt(new String(new_licensee_code_raw, StandardCharsets.US_ASCII)));
+                return CatridgeLUTable.getNewLicensee(Integer.parseInt(code, 16));
             } catch (NumberFormatException e) {
-                licensee = new String(new_licensee_code_raw, StandardCharsets.US_ASCII);
+                return code;
             }
-        } else {
-            licensee = CatridgeLUTable.getOldLicensee(old_licensee_code_raw);
         }
-        return licensee;
+        return CatridgeLUTable.getOldLicensee(old_licensee_code_raw);
     }
 
     public String getType() {
-        return CatridgeLUTable.cartridge_types[cartridge_type_raw];
+        return cartridgeTypeInfo.name();
     }
 
     public boolean getSGBFlag() {
-        return sgb_flag_raw == 0x3;
+        return sgb_flag_raw == 0x03;
     }
 
     public int getROMSize() {
-        return 32 * (1 << ROM_size_raw);
+        return headerROMSizeBytes == 0 ? data.length / 1024 : headerROMSizeBytes / 1024;
     }
 
     public int getRAMSize() {
-        return CatridgeLUTable.RAMSizes[RAM_size_raw];
+        return resolvedRAMSizeBytes() / 1024;
     }
 
     public String getRegion() {
@@ -78,12 +88,33 @@ public class Catridge extends BusMemory {
         return ROM_ver_raw;
     }
 
+    @Override
     public int read(int address) {
         return mbc.read(address);
     }
 
+    @Override
     public void write(int address, int value) {
         mbc.write(address, value);
     }
 
+    public int readRAM(int address) {
+        return mbc.readRAM(address);
+    }
+
+    public void writeRAM(int address, int value) {
+        mbc.writeRAM(address, value);
+    }
+
+    private int resolvedROMSizeBytes() {
+        return headerROMSizeBytes == 0 ? data.length : Math.max(headerROMSizeBytes, data.length);
+    }
+
+    private int resolvedRAMSizeBytes() {
+        return switch (cartridgeTypeInfo.mbcType()) {
+            case MBC_6, HUC3 -> Math.max(headerRAMSizeBytes, 32 * 1024);
+            case POCKET_CAMERA -> Math.max(headerRAMSizeBytes, 128 * 1024);
+            default -> cartridgeTypeInfo.hasRam() ? headerRAMSizeBytes : 0;
+        };
+    }
 }
