@@ -21,7 +21,6 @@ public class PulseChannels  {
     private short envelopeCounter;
     private boolean envelopeEnabled;
 
-    //i don't know yet variables
     private int periodValue;
     private int currfrequency;
 
@@ -32,8 +31,6 @@ public class PulseChannels  {
     private int individualStep;
 
 
-    //sample relaterd variables
-    private double sampleRate;
 
 
 
@@ -53,8 +50,6 @@ public class PulseChannels  {
         this.channelRegisters = reg.clone();
     }
     public boolean isEnabled(){ return this.Enable;    }
-//    public boolean isDacEnabled(){return (channelRegisters[1].addr & 0xF8) != 0;}
-
     public void trigger(){
         this.Enable = true;
         this.lengthCounter = (this.lengthCounter == 0 ) ? 64 : this.lengthCounter;
@@ -132,19 +127,14 @@ public class PulseChannels  {
                 }
             }
         }
-
-
-
     }
-
-
-
 
     public void step(){
         dutyStep = (short) ((dutyStep +1) % 8);
     }
 
     public int getAmplitude(){
+
 
         if(!this.Enable || !this.isDacEnable)
         {
@@ -157,6 +147,7 @@ public class PulseChannels  {
 
     //next need to differentiate the two states when the channel is on or off on writing
     public void write(int addr, int val){
+
         HardwareRegisters a = HardwareRegisters.findByValue(addr);
         switch (a) {
             case NR10 -> {

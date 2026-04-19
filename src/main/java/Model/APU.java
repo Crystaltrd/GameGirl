@@ -8,7 +8,7 @@ public class APU extends BusMemory {
 
     public final PulseChannels pulse1 = new PulseChannels(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
     private final PulseChannels pulse2 = new PulseChannels(null,HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
-    private final byte[] regs = new byte[0x27];
+    private final byte[] regs = new byte[0x30];
     private final byte[] waveRam = new byte[0x10];
     private final WaveChannel waveChannel = new WaveChannel(this.waveRam, HardwareRegisters.NR30, HardwareRegisters.NR31, HardwareRegisters.NR32, HardwareRegisters.NR33, HardwareRegisters.NR34);
     private final NoiseChannel noiseChannel = new NoiseChannel(null,HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
@@ -44,10 +44,12 @@ public class APU extends BusMemory {
     }
 
     private boolean isEnabled() {
+
         return (regs[HardwareRegisters.NR52.addr & 0xFF] & 0x80) != 0;
     }
 
     private void powerOff() {
+
         Arrays.fill(regs, (byte) 0);
         
     }
@@ -58,38 +60,37 @@ public class APU extends BusMemory {
             return waveRam[addr - 0x30];
         }
         HardwareRegisters add = HardwareRegisters.findByValue(addr);
-        int offset = addr & 0xFF;
+        int a = addr & 0xFF;
 
-            if (addr == (HardwareRegisters.NR52.addr & 0xFF)) {
+            if (add == HardwareRegisters.NR52) {
                 int channelFlags = 0;
                 if (pulse1.isEnabled()) channelFlags |= 0x01;
                 if (pulse2.isEnabled()) channelFlags |= 0x02;
                 if (waveChannel.isEnabled()) channelFlags |= 0x04;
                 if (noiseChannel.isEnabled()) channelFlags |= 0x08;
-                return  ((regs[offset] & 0x80) | 0x70 | channelFlags);
+                return  ((regs[a] & 0x80) | 0x70 | channelFlags);
             }
 
         return switch (add) {
-            case NR10 -> regs[offset] | UNUSED_BITS_NR10;
-            case NR11, NR21 -> regs[offset] | UNUSED_BITS_NRX1;
-            case NR14, NR24, NR34, NR44 -> regs[offset] | UNUSED_BITS_NRX4;
-            case NR30 -> regs[offset] | UNUSED_BITS_NR30;
-            case NR32 -> regs[offset] | UNUSED_BITS_NR32;
+            case NR10 -> regs[a] | UNUSED_BITS_NR10;
+            case NR11, NR21 -> regs[a] | UNUSED_BITS_NRX1;
+            case NR14, NR24, NR34, NR44 -> regs[a] | UNUSED_BITS_NRX4;
+            case NR30 -> regs[a] | UNUSED_BITS_NR30;
+            case NR32 -> regs[a] | UNUSED_BITS_NR32;
             case NR13, NR23, NR31, NR33, NR41 -> 0xFF;
-            case null, default -> regs[offset] & 0xFF; //still not sure
+            case null, default -> regs[a] & 0xFF; //still not sure
 
         };
 
         }
 
     public void write(int addr, int val) {
-        int a = addr &  0xFFFF;
-        if (a >= 0xFF30 && a <= 0xFF3F) {
-            waveRam[a - 0xFF30] = (byte) val;
+        int a = addr &  0xFF;
+        if (a >= 0x30 && a <= 0x3F) {
+            waveRam[a - 0x30] = (byte) val;
             return;
         }
         HardwareRegisters add = HardwareRegisters.findByValue(a);
-        int offset = addr & 0xFF;
 
             if (add == HardwareRegisters.NR52) {
                 boolean wasEnabled = isEnabled();
@@ -122,11 +123,13 @@ public class APU extends BusMemory {
             if (!isEnabled()) {
                 return;
             }
-
-            regs[offset] = (byte) val;
+            this.regs[a] = (byte) val;
         }
     }
     public void frameSequencer(){
+
+
+
         if(isEnabled()) {
 
             frameSequencerCounter--;
@@ -155,6 +158,7 @@ public class APU extends BusMemory {
         }
 
     }
+    public static int cpt =0;
     public float[] getOutputSamples() {
         float left = 0;
         float right = 0;
@@ -183,6 +187,7 @@ public class APU extends BusMemory {
     public void tick() {
         tCycles++;
         if(tCycles >= 95){
+            cpt++;
             tCycles -= 95;
             float[] sample  = getOutputSamples();
 
