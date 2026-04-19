@@ -51,6 +51,8 @@ public class APU extends BusMemory {
     private void powerOff() {
 
         Arrays.fill(regs, (byte) 0);
+
+
         
     }
 
@@ -59,6 +61,7 @@ public class APU extends BusMemory {
         if (addr >= 0x30 && addr <= 0x3F) {
             return waveRam[addr - 0x30];
         }
+        System.out.println(regs[HardwareRegisters.NR12.addr]);
         HardwareRegisters add = HardwareRegisters.findByValue(addr);
         int a = addr & 0xFF;
 
@@ -68,7 +71,10 @@ public class APU extends BusMemory {
                 if (pulse2.isEnabled()) channelFlags |= 0x02;
                 if (waveChannel.isEnabled()) channelFlags |= 0x04;
                 if (noiseChannel.isEnabled()) channelFlags |= 0x08;
-                return  ((regs[a] & 0x80) | 0x70 | channelFlags);
+
+
+                return  ((regs[a] & 0x80) | UNUSED_BITS_NR52 | channelFlags);
+
             }
 
         return switch (add) {
@@ -78,11 +84,14 @@ public class APU extends BusMemory {
             case NR30 -> regs[a] | UNUSED_BITS_NR30;
             case NR32 -> regs[a] | UNUSED_BITS_NR32;
             case NR13, NR23, NR31, NR33, NR41 -> 0xFF;
-            case null, default -> regs[a] & 0xFF; //still not sure
+            case null, default ->regs[a] & 0xFF; //still not sure
 
-        };
+            };
 
         }
+
+
+
 
     public void write(int addr, int val) {
         int a = addr &  0xFF;
@@ -179,7 +188,7 @@ public class APU extends BusMemory {
 
         float volumeLeft = ((nr50 >> 4) & 0x07) + 1;
         float volumeRight= (nr50 & 0x07) + 1;
-        float sampleScale = 128.0f;
+        float sampleScale = 260.0f;
 
         return new float[] {(left * volumeLeft) /sampleScale,(right * volumeRight) / sampleScale};
     }
@@ -191,7 +200,8 @@ public class APU extends BusMemory {
             tCycles -= 95;
             float[] sample  = getOutputSamples();
 
-            short left = (short) (sample[0] * 32767);
+
+            short left = (short) (sample[0]* 32767);
             short right = (short) (sample[1] * 32767);
             byte[] buffer =  new byte[4];
             buffer[0] = (byte)(left & 0xFF);
