@@ -36,8 +36,8 @@ public class NoiseChannel  {
         this.lengthCounter = (this.lengthCounter == 0) ? 64 : this.lengthCounter;
         this.currfrequency = getFrequencyTimer();
         this.lfsr = 0x7FFF;
-        this.envelopeEnabled = true;
-        this.envelopeCounter = this.envelopSweepPace;
+        this.envelopeEnabled = (this.envelopSweepPace != 0);
+        this.envelopeCounter = (this.envelopSweepPace == 0) ? 8 : this.envelopSweepPace;
         this.currVolume = this.initialVolume;
     }
 
@@ -81,11 +81,10 @@ public class NoiseChannel  {
     }
 
     public void envelopeClock() {
-        if (this.envelopeEnabled && this.envelopSweepPace > 0) {
+        if (this.envelopeEnabled) {
             this.envelopeCounter--;
             if (this.envelopeCounter <= 0) {
-                this.envelopeCounter = this.envelopSweepPace;
-                if (enveloppeDir == 0 && currVolume > 0) currVolume--;
+                this.envelopeCounter = (this.envelopSweepPace == 0) ? 8 : this.envelopSweepPace;                if (enveloppeDir == 0 && currVolume > 0) currVolume--;
                 else if (enveloppeDir == 1 && currVolume < 15) currVolume++;
             }
         }

@@ -54,9 +54,8 @@ public class PulseChannels  {
         this.Enable = true;
         this.lengthCounter = (this.lengthCounter == 0 ) ? 64 : this.lengthCounter;
         this.currfrequency = (2048-periodValue)*4;
-        this.dutyStep = 0;
-        this.envelopeEnabled = true;
-        this.envelopeCounter = this.envelopSweepPace;
+        this.envelopeEnabled = (this.envelopSweepPace != 0);
+        this.envelopeCounter = (this.envelopSweepPace == 0) ? 8 : this.envelopSweepPace;
         this.currVolume = initialVolume;
     }
 
@@ -82,7 +81,7 @@ public class PulseChannels  {
         if (this.envelopeEnabled) {
             this.envelopeCounter--;
             if (this.envelopeCounter <= 0) {
-                this.envelopeCounter = this.envelopSweepPace;
+                this.envelopeCounter = (this.envelopSweepPace == 0) ? 8 : this.envelopSweepPace;
                 if (enveloppeDir == 0)
                 {
                     if(currVolume > 0){

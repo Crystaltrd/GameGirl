@@ -61,7 +61,6 @@ public class APU extends BusMemory {
         if (addr >= 0x30 && addr <= 0x3F) {
             return waveRam[addr - 0x30];
         }
-        System.out.println(regs[HardwareRegisters.NR12.addr]);
         HardwareRegisters add = HardwareRegisters.findByValue(addr);
         int a = addr & 0xFF;
 
@@ -188,7 +187,7 @@ public class APU extends BusMemory {
 
         float volumeLeft = ((nr50 >> 4) & 0x07) + 1;
         float volumeRight= (nr50 & 0x07) + 1;
-        float sampleScale = 260.0f;
+        float sampleScale = 480.0f;
 
         return new float[] {(left * volumeLeft) /sampleScale,(right * volumeRight) / sampleScale};
     }
