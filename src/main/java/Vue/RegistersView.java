@@ -38,6 +38,8 @@ public class RegistersView extends JPanel {
             add(panel);
         }
         var updateButton = new JButton("Update Values");
+        updateButton.setFocusable(false);
+        this.setFocusable(false);
         updateButton.addActionListener(registersController);
         add(updateButton);
         setVisible(true);

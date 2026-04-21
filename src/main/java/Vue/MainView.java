@@ -96,7 +96,6 @@ public class MainView extends JFrame implements KeyListener {
     public void keyTyped(KeyEvent keyEvent) {
         switch (keyEvent.getKeyChar()) {
             case 'r' -> restartROM();
-            default -> System.out.println(keyEvent.getKeyChar());
         }
     }
 
