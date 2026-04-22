@@ -14,7 +14,6 @@ public class APU extends BusMemory {
     private final NoiseChannel noiseChannel = new NoiseChannel(null,HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
     private long tCycles = 0;
 
-    private int frameSequencerCounter = 8192;
     private short frameSequenncerStep;
 
     private static final int UNUSED_BITS_NR10 = 0b10000000;
@@ -23,6 +22,12 @@ public class APU extends BusMemory {
     private static final int UNUSED_BITS_NR30 = 0b01111111;
     private static final int UNUSED_BITS_NR32 = 0b10011111;
     private static final int UNUSED_BITS_NR52 = 0b01110000;
+    private boolean previousDivBit = false;
+
+    private float highpassLeft = 0;
+    private float highpassRight = 0;
+    private float prevRawLeft = 0;
+    private float prevRawRight = 0;
 
     //audio
     AudioFormat format = new AudioFormat(44100,16,2,true, false);
@@ -106,7 +111,6 @@ public class APU extends BusMemory {
                 if (wasEnabled && !isEnabled()) {
                     powerOff();
                 }
-                frameSequencerCounter = 8192;
                 frameSequenncerStep = 0;
                 return;
             }
@@ -134,23 +138,9 @@ public class APU extends BusMemory {
             this.regs[a] = (byte) val;
         }
     }
-    public void frameSequencer(){
 
-
-
-        if(isEnabled()) {
-
-            frameSequencerCounter--;
-            if(this.frameSequencerCounter <= 0 ){
-                this.frameSequencerCounter += 8192;
-                this.frameSequenncerStep = (short) ((this.frameSequenncerStep + 1) % 8);
-                sequencerClock();
-            }
-        }
-
-    }
     public void sequencerClock(){
-        if(frameSequenncerStep % 2 == 0){
+        if((frameSequenncerStep % 2 == 0) || (frameSequenncerStep == 7)){
             pulse1.lengthClock();
             pulse2.lengthClock();
             waveChannel.lengthClock();
@@ -189,7 +179,17 @@ public class APU extends BusMemory {
         float volumeRight= (nr50 & 0x07) + 1;
         float sampleScale = 480.0f;
 
-        return new float[] {(left * volumeLeft) /sampleScale,(right * volumeRight) / sampleScale};
+
+        float rawLeft = (left * volumeLeft) / sampleScale;
+        float rawRight = (right * volumeRight) / sampleScale;
+
+        highpassLeft = 0.999958f * (highpassLeft + rawLeft - prevRawLeft);
+        highpassRight = 0.999958f * (highpassRight + rawRight - prevRawRight);
+
+        prevRawLeft = rawLeft;
+        prevRawRight = rawRight;
+
+        return new float[] {highpassLeft, highpassRight};
     }
 
     public void tick() {
@@ -214,7 +214,14 @@ public class APU extends BusMemory {
 
         }
 
-        frameSequencer();
+        int div = ctx.getTimer().getDivReg();
+        boolean divBit = (div & (1 << 13)) != 0;
+        if(previousDivBit && !divBit){
+            frameSequenncerStep = (short) ((frameSequenncerStep + 1) % 8);
+            sequencerClock();
+
+        }
+        previousDivBit = divBit;
         pulse1.tick(1);
         pulse2.tick(1);
         waveChannel.tick(1);

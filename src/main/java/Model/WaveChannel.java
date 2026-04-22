@@ -37,7 +37,7 @@ public class WaveChannel{
         this.Enable = true;
         this.lengthCounter = (this.lengthCounter == 0) ? 256 : this.lengthCounter;
         this.currfrequency = (2048 - this.periodValue) * 2;
-        this.waveRamPosition = 0;
+        this.waveRamPosition = 0x1F;
         this.currSample = 0;
     }
 
@@ -52,7 +52,6 @@ public class WaveChannel{
     }
 
     public void step() {
-        this.waveRamPosition = (short) ((this.waveRamPosition + 1) & 0x1F);
         int byteIndex = this.waveRamPosition >> 1;
         int sample;
         if ((this.waveRamPosition & 0x01) == 0) {
@@ -60,6 +59,7 @@ public class WaveChannel{
         } else {
             sample = this.waveRam[byteIndex] & 0x0F;
         }
+        this.waveRamPosition = (short) ((this.waveRamPosition + 1) & 0x1F);
 
         if (this.outputLevel == 0) {
             this.currSample = 0;

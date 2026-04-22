@@ -29,6 +29,8 @@ public class PulseChannels  {
     private int sweePaceCounter;
     private short sweepDirection;
     private int individualStep;
+    private int shadowPeriod;
+    private boolean sweepEnabled;
 
 
 
@@ -57,7 +59,20 @@ public class PulseChannels  {
         this.envelopeEnabled = (this.envelopSweepPace != 0);
         this.envelopeCounter = (this.envelopSweepPace == 0) ? 8 : this.envelopSweepPace;
         this.currVolume = initialVolume;
+        this.shadowPeriod = this.periodValue;
+        this.sweePaceCounter = (this.sweepPace == 0) ? 8 : this.sweepPace;
+        this.sweepEnabled = (this.sweepPace != 0) || (this.individualStep != 0);
+        if (this.individualStep != 0) {
+            int newPeriod = calculateNewPeriod();
+            if (newPeriod > 2047) this.Enable = false;
+        }
     }
+    private int calculateNewPeriod() {
+        int temp = this.shadowPeriod >> this.individualStep;
+        return (this.sweepDirection == 0) ? this.shadowPeriod + temp : this.shadowPeriod - temp;
+    }
+
+
 
     public void tick(int cycles){
         if(Enable) {
@@ -98,35 +113,25 @@ public class PulseChannels  {
         }
     }
     public void sweepClock(){
-        if (this.sweepPace == 0) {
-            return;
-        }
-        this.sweePaceCounter--;
-        if (this.sweePaceCounter <= 0) {
-            this.sweePaceCounter = this.sweepPace;
 
-            int nextPeriod;
-
-            if (this.sweepDirection == 0) {
-                nextPeriod = this.periodValue + (this.periodValue >> this.individualStep);
-            } else {
-                nextPeriod = this.periodValue - (this.periodValue >> this.individualStep);
-            }
-
-            if (nextPeriod > 2047) {
-                this.Enable = false;
-            } else if (this.individualStep > 0) {
-                this.periodValue = nextPeriod;
-
-                this.currfrequency = (2048 - this.periodValue) * 4;
-
-
-                if ((this.periodValue + (this.periodValue >> this.individualStep)) > 2047&& (this.sweepDirection == 0)) {
-                    this.Enable = false;
+            this.sweePaceCounter--;
+            if (this.sweePaceCounter <= 0) {
+                this.sweePaceCounter = (this.sweepPace == 0) ? 8 : this.sweepPace;
+                if (this.sweepEnabled && this.sweepPace != 0) {
+                    int newPeriod = calculateNewPeriod();
+                    if (newPeriod > 2047) {
+                        this.Enable = false;
+                    } else if (this.individualStep != 0) {
+                        this.shadowPeriod = newPeriod;
+                        this.periodValue = newPeriod;
+                        this.currfrequency = (2048 - this.periodValue) * 4;
+                        int newPeriod2 = calculateNewPeriod();
+                        if (newPeriod2 > 2047) this.Enable = false;
+                    }
                 }
             }
         }
-    }
+
 
     public void step(){
         dutyStep = (short) ((dutyStep +1) % 8);

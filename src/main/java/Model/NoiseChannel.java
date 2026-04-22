@@ -47,6 +47,7 @@ public class NoiseChannel  {
     }
 
     public void tick(int cycles) {
+        if(clockShift >= 14) return;
         if (Enable && isDacEnable) {
             this.currfrequency -= cycles;
             if (this.currfrequency <= 0) {
