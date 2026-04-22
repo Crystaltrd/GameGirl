@@ -66,6 +66,7 @@ public class PulseChannels  {
             int newPeriod = calculateNewPeriod();
             if (newPeriod > 2047) this.Enable = false;
         }
+
     }
     private int calculateNewPeriod() {
         int temp = this.shadowPeriod >> this.individualStep;
@@ -149,7 +150,6 @@ public class PulseChannels  {
 
     }
 
-    //next need to differentiate the two states when the channel is on or off on writing
     public void write(int addr, int val){
 
         HardwareRegisters a = HardwareRegisters.findByValue(addr);

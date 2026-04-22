@@ -2,6 +2,7 @@ package Model;
 
 import java.util.Arrays;
 import javax.sound.sampled.*;
+import javax.xml.crypto.Data;
 
 public class APU extends BusMemory {
     private final Emulator ctx;
@@ -30,23 +31,51 @@ public class APU extends BusMemory {
     private float prevRawRight = 0;
 
     //audio
-    AudioFormat format = new AudioFormat(44100,16,2,true, true);
+    AudioFormat format = new AudioFormat(44100,16,2,true, false);
     SourceDataLine line;
+    Mixer.Info[] mixers = AudioSystem.getMixerInfo();
+    Mixer selectedMixer = null;
 
 
 
     APU(Emulator ctx) {
         this.ctx = ctx;
         regs[HardwareRegisters.NR52.addr & 0xFF] = (byte) 0x80;
+        for(Mixer.Info info : mixers) {
+            Mixer mixer = AudioSystem.getMixer(info);
+            DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, format);
+
+            if (mixer.isLineSupported(lineInfo)) {
+                selectedMixer = mixer;
+                break;
+            }
+
+        }
         try {
-            this.line = AudioSystem.getSourceDataLine(format);
+            if (selectedMixer != null) {
+                DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, format);
+
+                try {
+                    this.line = (SourceDataLine) selectedMixer.getLine(lineInfo);
+                } catch (LineUnavailableException ignored) {
+
+                }
+
+            } else {
+                this.line = AudioSystem.getSourceDataLine(format);
+
+            }
             this.line.open(format, 4096);
             this.line.start();
-        } catch (LineUnavailableException e) {
+        }
+        catch (Exception e){
             System.err.println("Audio line unreachable");
             e.printStackTrace();
         }
+
+
     }
+
 
     private boolean isEnabled() {
 
@@ -88,8 +117,7 @@ public class APU extends BusMemory {
             case NR30 -> regs[a] | UNUSED_BITS_NR30;
             case NR32 -> regs[a] | UNUSED_BITS_NR32;
             case NR13, NR23, NR31, NR33, NR41 -> 0xFF;
-            case null, default ->regs[a] & 0xFF; //still not sure
-
+            case null, default ->regs[a] & 0xFF;
             };
 
         }
@@ -103,6 +131,7 @@ public class APU extends BusMemory {
             waveRam[a - 0x30] = (byte) val;
             return;
         }
+
         HardwareRegisters add = HardwareRegisters.findByValue(a);
 
             if (add == HardwareRegisters.NR52) {
@@ -156,7 +185,6 @@ public class APU extends BusMemory {
         }
 
     }
-    public static int cpt =0;
     public float[] getOutputSamples() {
         float left = 0;
         float right = 0;
@@ -195,7 +223,6 @@ public class APU extends BusMemory {
     public void tick() {
         tCycles++;
         if(tCycles >= 95){
-            cpt++;
             tCycles -= 95;
             float[] sample  = getOutputSamples();
 
