@@ -6,20 +6,17 @@ import lombok.Getter;
 public class WaveChannel{
     private final HardwareRegisters[] channelRegisters;
     private final byte[] waveRam;
-
     private int periodValue;
     private int lengthEnabled;
     private int initLengthTimer;
     private short outputLevel;
     private boolean isDacEnable;
     private double sampleRate;
-
     private int currfrequency;
     private int lengthCounter;
     private boolean Enable;
     private short waveRamPosition;
     private int currSample;
-
     public WaveChannel(byte[] waveRam, HardwareRegisters... reg) {
         this.channelRegisters = reg.clone();
         this.waveRam = waveRam;
@@ -89,7 +86,6 @@ public class WaveChannel{
 
     public void write(int addr, int val) {
         HardwareRegisters reg = HardwareRegisters.findByValue(addr);
-
         switch (reg) {
             case NR30 -> {
                 this.isDacEnable = ((val >> 7) & 0x01) == 1;

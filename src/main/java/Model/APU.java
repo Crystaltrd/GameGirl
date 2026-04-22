@@ -5,111 +5,80 @@ import javax.sound.sampled.*;
 import javax.xml.crypto.Data;
 
 public class APU extends BusMemory {
-    private final Emulator ctx;
-
-    public final PulseChannels pulse1 = new PulseChannels(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
-    private final PulseChannels pulse2 = new PulseChannels(null,HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
-    private final byte[] regs = new byte[0x30];
-    private final byte[] waveRam = new byte[0x10];
-    private final WaveChannel waveChannel = new WaveChannel(this.waveRam, HardwareRegisters.NR30, HardwareRegisters.NR31, HardwareRegisters.NR32, HardwareRegisters.NR33, HardwareRegisters.NR34);
-    private final NoiseChannel noiseChannel = new NoiseChannel(null,HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
-    private long tCycles = 0;
-
-    private short frameSequenncerStep;
-
     private static final int UNUSED_BITS_NR10 = 0b10000000;
     private static final int UNUSED_BITS_NRX1 = 0b00111111;
     private static final int UNUSED_BITS_NRX4 = 0b10111111;
     private static final int UNUSED_BITS_NR30 = 0b01111111;
     private static final int UNUSED_BITS_NR32 = 0b10011111;
     private static final int UNUSED_BITS_NR52 = 0b01110000;
+    public final PulseChannels pulse1 = new PulseChannels(HardwareRegisters.NR10, HardwareRegisters.NR11, HardwareRegisters.NR12, HardwareRegisters.NR13, HardwareRegisters.NR14);
+    private final Emulator ctx;
+    private final PulseChannels pulse2 = new PulseChannels(null, HardwareRegisters.NR21, HardwareRegisters.NR22, HardwareRegisters.NR23, HardwareRegisters.NR24);
+    private final byte[] regs = new byte[0x30];
+    private final byte[] waveRam = new byte[0x10];
+    private final WaveChannel waveChannel = new WaveChannel(this.waveRam, HardwareRegisters.NR30, HardwareRegisters.NR31, HardwareRegisters.NR32, HardwareRegisters.NR33, HardwareRegisters.NR34);
+    private final NoiseChannel noiseChannel = new NoiseChannel(null, HardwareRegisters.NR41, HardwareRegisters.NR42, HardwareRegisters.NR43, HardwareRegisters.NR44);
+    //audio
+    AudioFormat format = new AudioFormat(44100, 16, 2, true, false);
+    SourceDataLine line;
+    Mixer.Info[] mixers = AudioSystem.getMixerInfo();
+    Mixer selectedMixer = null;
+    private long tCycles = 0;
+    private short frameSequenncerStep;
     private boolean previousDivBit = false;
-
     private float highpassLeft = 0;
     private float highpassRight = 0;
     private float prevRawLeft = 0;
     private float prevRawRight = 0;
 
-    //audio
-    AudioFormat format = new AudioFormat(44100,16,2,true, false);
-    SourceDataLine line;
-    Mixer.Info[] mixers = AudioSystem.getMixerInfo();
-    Mixer selectedMixer = null;
-
-
 
     APU(Emulator ctx) {
         this.ctx = ctx;
         regs[HardwareRegisters.NR52.addr & 0xFF] = (byte) 0x80;
-        for(Mixer.Info info : mixers) {
+        for (Mixer.Info info : mixers) {
             Mixer mixer = AudioSystem.getMixer(info);
             DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, format);
-
             if (mixer.isLineSupported(lineInfo)) {
                 selectedMixer = mixer;
                 break;
             }
-
         }
         try {
             if (selectedMixer != null) {
                 DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, format);
-
                 try {
                     this.line = (SourceDataLine) selectedMixer.getLine(lineInfo);
-                } catch (LineUnavailableException ignored) {
-
-                }
-
+                } catch (LineUnavailableException ignored) {}
             } else {
                 this.line = AudioSystem.getSourceDataLine(format);
-
             }
             this.line.open(format, 4096);
             this.line.start();
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.err.println("Audio line unreachable");
             e.printStackTrace();
         }
-
-
     }
 
 
-    private boolean isEnabled() {
+    private boolean isEnabled() {return (regs[HardwareRegisters.NR52.addr & 0xFF] & 0x80) != 0;}
 
-        return (regs[HardwareRegisters.NR52.addr & 0xFF] & 0x80) != 0;
-    }
-
-    private void powerOff() {
-
-        Arrays.fill(regs, (byte) 0);
-
-
-        
-    }
+    private void powerOff() {Arrays.fill(regs, (byte) 0);}
 
     public int read(int addr) {
-
         if (addr >= 0x30 && addr <= 0x3F) {
             return waveRam[addr - 0x30];
         }
         HardwareRegisters add = HardwareRegisters.findByValue(addr);
         int a = addr & 0xFF;
-
-            if (add == HardwareRegisters.NR52) {
-                int channelFlags = 0;
-                if (pulse1.isEnabled()) channelFlags |= 0x01;
-                if (pulse2.isEnabled()) channelFlags |= 0x02;
-                if (waveChannel.isEnabled()) channelFlags |= 0x04;
-                if (noiseChannel.isEnabled()) channelFlags |= 0x08;
-
-
-                return  ((regs[a] & 0x80) | UNUSED_BITS_NR52 | channelFlags);
-
-            }
-
+        if (add == HardwareRegisters.NR52) {
+            int channelFlags = 0;
+            if (pulse1.isEnabled()) channelFlags |= 0x01;
+            if (pulse2.isEnabled()) channelFlags |= 0x02;
+            if (waveChannel.isEnabled()) channelFlags |= 0x04;
+            if (noiseChannel.isEnabled()) channelFlags |= 0x08;
+            return ((regs[a] & 0x80) | UNUSED_BITS_NR52 | channelFlags);
+        }
         return switch (add) {
             case NR10 -> regs[a] | UNUSED_BITS_NR10;
             case NR11, NR21 -> regs[a] | UNUSED_BITS_NRX1;
@@ -117,33 +86,28 @@ public class APU extends BusMemory {
             case NR30 -> regs[a] | UNUSED_BITS_NR30;
             case NR32 -> regs[a] | UNUSED_BITS_NR32;
             case NR13, NR23, NR31, NR33, NR41 -> 0xFF;
-            case null, default ->regs[a] & 0xFF;
-            };
-
-        }
-
-
+            case null, default -> regs[a] & 0xFF;
+        };
+    }
 
 
     public void write(int addr, int val) {
-        int a = addr &  0xFF;
+        int a = addr & 0xFF;
         if (a >= 0x30 && a <= 0x3F) {
             waveRam[a - 0x30] = (byte) val;
             return;
         }
-
         HardwareRegisters add = HardwareRegisters.findByValue(a);
-
-            if (add == HardwareRegisters.NR52) {
-                boolean wasEnabled = isEnabled();
-                regs[a] = (byte) (val & 0x80);
-                if (wasEnabled && !isEnabled()) {
-                    powerOff();
-                }
-                frameSequenncerStep = 0;
-                return;
+        if (add == HardwareRegisters.NR52) {
+            boolean wasEnabled = isEnabled();
+            regs[a] = (byte) (val & 0x80);
+            if (wasEnabled && !isEnabled()) {
+                powerOff();
             }
-        if(isEnabled()) {
+            frameSequenncerStep = 0;
+            return;
+        }
+        if (isEnabled()) {
             if (a >= 0x10 && a <= 0x19) {
                 if (a <= 0x14) {
                     pulse1.write(addr, val);
@@ -155,36 +119,29 @@ public class APU extends BusMemory {
             } else if (a >= 0x20 && a <= 0x23) {
                 noiseChannel.write(addr, val);
             }
-
-            if (a < 0x10 || a > 0x26) {
-                return;
-            }
-
-
-            if (!isEnabled()) {
-                return;
-            }
+            if (a < 0x10 || a > 0x26) {return;}
+            if (!isEnabled()) {return;}
             this.regs[a] = (byte) val;
         }
     }
 
-    public void sequencerClock(){
-        if((frameSequenncerStep % 2 == 0) || (frameSequenncerStep == 7)){
+    public void sequencerClock() {
+        if ((frameSequenncerStep % 2 == 0) || (frameSequenncerStep == 7)) {
             pulse1.lengthClock();
             pulse2.lengthClock();
             waveChannel.lengthClock();
             noiseChannel.lengthClock();
         }
-        if(frameSequenncerStep == 7){
+        if (frameSequenncerStep == 7) {
             pulse1.envelopeClock();
             pulse2.envelopeClock();
             noiseChannel.envelopeClock();
         }
-        if(frameSequenncerStep == 2 || frameSequenncerStep == 6){
+        if (frameSequenncerStep == 2 || frameSequenncerStep == 6) {
             pulse1.sweepClock();
         }
-
     }
+
     public float[] getOutputSamples() {
         float left = 0;
         float right = 0;
@@ -202,51 +159,40 @@ public class APU extends BusMemory {
         if ((nr51 & 0x20) != 0) left += ch2;
         if ((nr51 & 0x40) != 0) left += ch3;
         if ((nr51 & 0x80) != 0) left += ch4;
-
         float volumeLeft = ((nr50 >> 4) & 0x07) + 1;
-        float volumeRight= (nr50 & 0x07) + 1;
+        float volumeRight = (nr50 & 0x07) + 1;
         float sampleScale = 480.0f;
-
-
         float rawLeft = (left * volumeLeft) / sampleScale;
         float rawRight = (right * volumeRight) / sampleScale;
-
         highpassLeft = 0.999958f * (highpassLeft + rawLeft - prevRawLeft);
         highpassRight = 0.999958f * (highpassRight + rawRight - prevRawRight);
-
         prevRawLeft = rawLeft;
         prevRawRight = rawRight;
-
-        return new float[] {highpassLeft, highpassRight};
+        return new float[]{highpassLeft, highpassRight};
     }
 
     public void tick() {
         tCycles++;
-        if(tCycles >= 95){
+        if (tCycles >= 95) {
             tCycles -= 95;
-            float[] sample  = getOutputSamples();
-
-
-            short left = (short) (sample[0]* 32767);
+            float[] sample = getOutputSamples();
+            short left = (short) (sample[0] * 32767);
             short right = (short) (sample[1] * 32767);
-            byte[] buffer =  new byte[4];
-            buffer[0] = (byte)(left & 0xFF);
-            buffer[1] = (byte)((left >> 8) & 0xFF);
-            buffer[2] = (byte)(right & 0xFF);
-            buffer[3] = (byte)((right >> 8) & 0xFF);
+            byte[] buffer = new byte[4];
+            buffer[0] = (byte) (left & 0xFF);
+            buffer[1] = (byte) ((left >> 8) & 0xFF);
+            buffer[2] = (byte) (right & 0xFF);
+            buffer[3] = (byte) ((right >> 8) & 0xFF);
             if (line != null && isEnabled()) {
                 line.write(buffer, 0, 4);
             }
-
-
         }
 
         int div = ctx.getTimer().getDivReg();
         boolean divBit = (div & (1 << 13)) != 0;
-        if(previousDivBit && !divBit){
+        if (previousDivBit && !divBit) {
             frameSequenncerStep = (short) ((frameSequenncerStep + 1) % 8);
             sequencerClock();
-
         }
         previousDivBit = divBit;
         pulse1.tick(1);

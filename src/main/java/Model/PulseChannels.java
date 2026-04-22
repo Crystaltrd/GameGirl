@@ -2,41 +2,25 @@ package Model;
 
 public class PulseChannels  {
     private final HardwareRegisters[] channelRegisters;
-    //global activation values?
     private boolean isDacEnable;
     private boolean Enable;
-
-    //length related (life period of the channel kinda)
     private int lengthEnabled;
     private int initLengthTimer;
     private int lengthCounter;
-
-    //volume only variables
     private int initialVolume;
     private int currVolume;
-
-    //envelope related variables
     private short enveloppeDir;
     private short envelopSweepPace;
     private short envelopeCounter;
     private boolean envelopeEnabled;
-
     private int periodValue;
     private int currfrequency;
-
-    //sweep
     private int sweepPace;
     private int sweePaceCounter;
     private short sweepDirection;
     private int individualStep;
     private int shadowPeriod;
     private boolean sweepEnabled;
-
-
-
-
-
-    //duty cycles
     private short dutyStep;
     private short waveDuty;
     private final int[][] dutyCycles = {
@@ -46,12 +30,12 @@ public class PulseChannels  {
             {1, 1, 1, 1, 1, 1, 0, 0}
     };
 
-
-
     public PulseChannels(HardwareRegisters... reg){
         this.channelRegisters = reg.clone();
     }
-    public boolean isEnabled(){ return this.Enable;    }
+
+    public boolean isEnabled(){ return this.Enable;}
+
     public void trigger(){
         this.Enable = true;
         this.lengthCounter = (this.lengthCounter == 0 ) ? 64 : this.lengthCounter;
@@ -72,9 +56,6 @@ public class PulseChannels  {
         int temp = this.shadowPeriod >> this.individualStep;
         return (this.sweepDirection == 0) ? this.shadowPeriod + temp : this.shadowPeriod - temp;
     }
-
-
-
     public void tick(int cycles){
         if(Enable) {
             this.currfrequency -= cycles;
@@ -82,9 +63,9 @@ public class PulseChannels  {
                 step();
                 this.currfrequency += (2048-this.periodValue)*4;
             }
-
         }
     }
+
     public void lengthClock() {
         if (this.lengthEnabled == 1) {
             this.lengthCounter--;
@@ -93,28 +74,22 @@ public class PulseChannels  {
             }
         }
     }
+
     public void envelopeClock() {
         if (this.envelopeEnabled) {
             this.envelopeCounter--;
             if (this.envelopeCounter <= 0) {
                 this.envelopeCounter = (this.envelopSweepPace == 0) ? 8 : this.envelopSweepPace;
-                if (enveloppeDir == 0)
-                {
-                    if(currVolume > 0){
-                        currVolume--;
-                    }
+                if (enveloppeDir == 0) {
+                    if(currVolume > 0) currVolume--;
                 }
                 else {
-                    if(currVolume < 15){
-                        currVolume++;
-                    }
+                    if(currVolume < 15) currVolume++;
                 }
             }
-
         }
     }
     public void sweepClock(){
-
             this.sweePaceCounter--;
             if (this.sweePaceCounter <= 0) {
                 this.sweePaceCounter = (this.sweepPace == 0) ? 8 : this.sweepPace;
@@ -139,19 +114,12 @@ public class PulseChannels  {
     }
 
     public int getAmplitude(){
-
-
-        if(!this.Enable || !this.isDacEnable)
-        {
-            return 0;
-        }
+        if(!this.Enable || !this.isDacEnable) {return 0;}
         int dutyCycleState = this.dutyCycles[this.waveDuty][this.dutyStep];
         return (dutyCycleState == 1) ? this.currVolume : 0;
-
     }
 
     public void write(int addr, int val){
-
         HardwareRegisters a = HardwareRegisters.findByValue(addr);
         switch (a) {
             case NR10 -> {
@@ -188,12 +156,5 @@ public class PulseChannels  {
             case null, default ->  System.err.println("Wrong component");
 
         }
-
-
-
-
-
-
     }
-
 }

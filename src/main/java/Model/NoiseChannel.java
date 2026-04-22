@@ -2,20 +2,16 @@ package Model;
 
 public class NoiseChannel  {
     private final HardwareRegisters[] channelRegisters;
-
     private boolean isDacEnable;
     private boolean Enable;
-
     private int lengthEnabled;
     private int lengthCounter;
-
     private int initialVolume;
     private int currVolume;
     private short enveloppeDir;
     private short envelopSweepPace;
     private short envelopeCounter;
     private boolean envelopeEnabled;
-
     private int lfsr = 0x7FFF;
     private int clockShift;
     private int clockDivider;
@@ -27,9 +23,7 @@ public class NoiseChannel  {
         this.channelRegisters = reg.clone();
     }
 
-    public boolean isEnabled() {
-        return this.Enable;
-    }
+    public boolean isEnabled() {return this.Enable;}
 
     public void trigger() {
         this.Enable = true;
@@ -93,7 +87,6 @@ public class NoiseChannel  {
 
     public void write(int addr, int val) {
         HardwareRegisters reg = HardwareRegisters.findByValue(addr);
-
         switch (reg) {
             case NR41 -> {
                 this.lengthCounter = 64 - (val & 0x3F);
