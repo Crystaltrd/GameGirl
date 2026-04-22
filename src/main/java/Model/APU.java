@@ -30,7 +30,7 @@ public class APU extends BusMemory {
     private float prevRawRight = 0;
 
     //audio
-    AudioFormat format = new AudioFormat(44100,16,2,true, false);
+    AudioFormat format = new AudioFormat(44100,16,2,true, true);
     SourceDataLine line;
 
 
