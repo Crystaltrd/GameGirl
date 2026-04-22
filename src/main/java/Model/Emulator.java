@@ -10,6 +10,7 @@ import java.io.InputStream;
 @Setter
 @Getter
 public class Emulator {
+    public StringBuilder dbg_msg = new StringBuilder();
     private Process process = null;
     private TileView tileMapRenderer = null;
     private GameView GameRenderer = null;
@@ -22,7 +23,6 @@ public class Emulator {
     private boolean emergency = false;
     private long ticks = 0;
     private long FPS = 0;
-
     private Catridge catridge;
     private CPU cpu;
     private PPU ppu;
@@ -30,9 +30,17 @@ public class Emulator {
     private IORegisters ioRegisters;
     private byte[] WRAM = new byte[0x2000];
     private byte[] ZeroPage = new byte[0x80];
-
-    public StringBuilder dbg_msg = new StringBuilder();
     private byte readReady = 0;
+    private byte currchar = 0;
+
+    public Emulator() {
+        init();
+    }
+
+    public Emulator(Process pr) {
+        init();
+        process = pr;
+    }
 
     public void push(int val) {
         cpu.setSP(cpu.getSP() - 1);
@@ -56,7 +64,6 @@ public class Emulator {
         return (hi << 8) | lo;
     }
 
-
     public int read16(int address) {
         int lo = read(address);
         int hi = read(address + 1);
@@ -68,24 +75,12 @@ public class Emulator {
         write(address, value & 0xFF);
     }
 
-
-    public Emulator() {
-        init();
-    }
-
-    public Emulator(Process pr) {
-        init();
-        process = pr;
-    }
-
     public void init() {
         cpu = new CPU(this);
         ppu = new PPU(this);
         timer = new Timer(this);
-        ioRegisters = new IORegisters(this); 
+        ioRegisters = new IORegisters(this);
     }
-
-    private byte currchar = 0;
 
     public void tick(int cycles) {
         for (int i = 0; i < cycles; i++) {
@@ -196,7 +191,7 @@ public class Emulator {
                     System.out.println("CPU stopped");
                     return 0;
                 }
-                //if(RegisterRenderer != null)
+                //if (RegisterRenderer != null)
                 // RegisterRenderer.update();
             }
             return 0;

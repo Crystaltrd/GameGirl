@@ -1,34 +1,27 @@
 package Model;
 
-import com.sun.jdi.event.BreakpointEvent;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang3.BitField;
-import Model.REG_TYPE.*;
 
 
 @Setter
 @Getter
 public class CPU {
 
-    private Emulator context;
     public static BitField lowByte = new BitField(0xFF);
     public static BitField HighByte = new BitField(0xFF00);
     public static BitField ZFlagMask = new BitField(0x80);
     public static BitField NFlagMask = new BitField(0x40);
     public static BitField HFlagMask = new BitField(0x20);
     public static BitField CFlagMask = new BitField(0x10);
-
     public static BitField VBlankMask = new BitField(0x1);
     public static BitField LCDStatMask = new BitField(0x2);
     public static BitField TimerMask = new BitField(0x4);
     public static BitField SerialMask = new BitField(0x8);
     public static BitField JoypadMask = new BitField(0x10);
-
     public static BitField InterruptRequested = new BitField(0x1F);
-
-
+    private Emulator context;
     private int AF = 0x01B0;
     private int BC = 0x0013;
     private int DE = 0x00D8;
@@ -53,6 +46,13 @@ public class CPU {
     CPU(Emulator context) {
         this.context = context;
 
+    }
+
+    public static boolean is16bitReg(REG_TYPE regType) {
+        return switch (regType) {
+            case RT_A, RT_B, RT_C, RT_D, RT_E, RT_F, RT_H, RT_L, RT_NONE -> false;
+            case RT_AF, RT_SP, RT_BC, RT_DE, RT_HL, RT_PC -> true;
+        };
     }
 
     public void fetchInstr() {
@@ -91,7 +91,6 @@ public class CPU {
                 PC++;
             }
             case AM_IMP -> {
-                return;
             }
             case AM_MR -> {
                 memDest = readReg(currInst.getReg1());
@@ -174,13 +173,6 @@ public class CPU {
         currInst.getInType().callBack.accept(context);
     }
 
-    public static boolean is16bitReg(REG_TYPE regType) {
-        return switch (regType) {
-            case RT_A, RT_B, RT_C, RT_D, RT_E, RT_F, RT_H, RT_L, RT_NONE -> false;
-            case RT_AF, RT_SP, RT_BC, RT_DE, RT_HL, RT_PC -> true;
-        };
-    }
-
     public int readReg(REG_TYPE regType) {
         return switch (regType) {
             case RT_A -> getA();
@@ -204,10 +196,8 @@ public class CPU {
     public boolean step() {
 
         if (!halted) {
-            if (!skipOutput)
-                output();
-            else
-                skipOutput = false;
+            if (!skipOutput) output();
+            else skipOutput = false;
             fetchInstr();
             context.tick(1);
             fetchParams();
@@ -248,7 +238,6 @@ public class CPU {
             case RT_PC -> setPC(val);
             case RT_SP -> setSP(val);
         }
-        ;
     }
 
     public boolean checkCond(COND_TYPE condition) {
@@ -273,79 +262,74 @@ public class CPU {
     }
 
     public void gotoAddr(int addr, boolean pushPC) {
-
         if (checkCond(currInst.getCondType())) {
-
-
             if (pushPC) {
                 context.tick(2);
                 context.push16(getPC());
             }
             setPC(addr);
             context.tick(1);
-        } else {
-
-        }
+        } 
     }
 
     public int getA() {
         return HighByte.getValue(AF);
     }
 
-    public int getF() {
-        return lowByte.getValue(AF);
-    }
-
-    public int getB() {
-        return HighByte.getValue(BC);
-    }
-
-    public int getC() {
-        return lowByte.getValue(BC);
-    }
-
-    public int getD() {
-        return HighByte.getValue(DE);
-    }
-
-    public int getE() {
-        return lowByte.getValue(DE);
-    }
-
-    public int getH() {
-        return HighByte.getValue(HL);
-    }
-
-    public int getL() {
-        return lowByte.getValue(HL);
-    }
-
     public void setA(int val) {
         AF = HighByte.setValue(AF, val & 0xFF);
+    }
+
+    public int getF() {
+        return lowByte.getValue(AF);
     }
 
     public void setF(int val) {
         AF = lowByte.setValue(AF, val & 0xFF);
     }
 
+    public int getB() {
+        return HighByte.getValue(BC);
+    }
+
     public void setB(int val) {
         BC = HighByte.setValue(BC, val & 0xFF);
+    }
+
+    public int getC() {
+        return lowByte.getValue(BC);
     }
 
     public void setC(int val) {
         BC = lowByte.setValue(BC, val & 0xFF);
     }
 
+    public int getD() {
+        return HighByte.getValue(DE);
+    }
+
     public void setD(int val) {
         DE = HighByte.setValue(DE, val & 0xFF);
+    }
+
+    public int getE() {
+        return lowByte.getValue(DE);
     }
 
     public void setE(int val) {
         DE = lowByte.setValue(DE, val & 0xFF);
     }
 
+    public int getH() {
+        return HighByte.getValue(HL);
+    }
+
     public void setH(int val) {
         HL = HighByte.setValue(HL, val & 0xFF);
+    }
+
+    public int getL() {
+        return lowByte.getValue(HL);
     }
 
     public void setL(int val) {
