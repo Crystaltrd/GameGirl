@@ -3,11 +3,14 @@ package Vue;
 import Model.Emulator;
 import Model.JOYP_BTNS;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
+import java.io.InputStream;
 
 
 public class MainView extends JFrame implements KeyListener {
@@ -23,6 +26,14 @@ public class MainView extends JFrame implements KeyListener {
 
     public MainView() {
         int returnValue = 0;
+        InputStream imgStream = MainView.class.getResourceAsStream("/icon.png");
+        try {
+            assert imgStream != null;
+            BufferedImage myImg = ImageIO.read(imgStream);
+            setIconImage(myImg);
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
         do {
             restarting = false;
             emulator = new Emulator();
