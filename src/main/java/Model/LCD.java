@@ -48,9 +48,9 @@ public class LCD {
 
     LCD(Emulator context) {
         this.context = context;
-        bgColors = LookAndFeelController.defaultPalette.clone();
-        sp1Colors = LookAndFeelController.defaultPalette.clone();
-        sp2Colors = LookAndFeelController.defaultPalette.clone();
+        bgColors = LookAndFeelController.defaultPalette[0].clone();
+        sp1Colors = LookAndFeelController.defaultPalette[1].clone();
+        sp2Colors = LookAndFeelController.defaultPalette[2].clone();
         setPPUMode(RENDER_MODE.MODE_OAM);
     }
 
@@ -69,24 +69,24 @@ public class LCD {
         int col3 = ColorID3Mask.getValue(val);
         switch (pal) {
             case 0:
-                bgColors[0] = LookAndFeelController.defaultPalette[col0];
-                bgColors[1] = LookAndFeelController.defaultPalette[col1];
-                bgColors[2] = LookAndFeelController.defaultPalette[col2];
-                bgColors[3] = LookAndFeelController.defaultPalette[col3];
+                bgColors[0] = LookAndFeelController.defaultPalette[0][col0];
+                bgColors[1] = LookAndFeelController.defaultPalette[0][col1];
+                bgColors[2] = LookAndFeelController.defaultPalette[0][col2];
+                bgColors[3] = LookAndFeelController.defaultPalette[0][col3];
                 BGPalette = val;
                 break;
             case 1:
-                sp1Colors[0] = LookAndFeelController.defaultPalette[0];
-                sp1Colors[1] = LookAndFeelController.defaultPalette[col1];
-                sp1Colors[2] = LookAndFeelController.defaultPalette[col2];
-                sp1Colors[3] = LookAndFeelController.defaultPalette[col3];
+                sp1Colors[0] = LookAndFeelController.defaultPalette[1][0];
+                sp1Colors[1] = LookAndFeelController.defaultPalette[1][col1];
+                sp1Colors[2] = LookAndFeelController.defaultPalette[1][col2];
+                sp1Colors[3] = LookAndFeelController.defaultPalette[1][col3];
                 ObjPalette[0] = val & ~(0x3);
                 break;
             case 2:
-                sp2Colors[0] = LookAndFeelController.defaultPalette[0];
-                sp2Colors[1] = LookAndFeelController.defaultPalette[col1];
-                sp2Colors[2] = LookAndFeelController.defaultPalette[col2];
-                sp2Colors[3] = LookAndFeelController.defaultPalette[col3];
+                sp2Colors[0] = LookAndFeelController.defaultPalette[2][0];
+                sp2Colors[1] = LookAndFeelController.defaultPalette[2][col1];
+                sp2Colors[2] = LookAndFeelController.defaultPalette[2][col2];
+                sp2Colors[3] = LookAndFeelController.defaultPalette[2][col3];
                 ObjPalette[1] = val & ~(0x3);
                 break;
         }

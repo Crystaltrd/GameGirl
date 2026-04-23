@@ -1,5 +1,6 @@
 package Vue;
 
+import Controller.LookAndFeelController;
 import Model.Emulator;
 import Model.JOYP_BTNS;
 
@@ -107,6 +108,8 @@ public class MainView extends JFrame implements KeyListener {
     public void keyTyped(KeyEvent keyEvent) {
         switch (keyEvent.getKeyChar()) {
             case 'r' -> restartROM();
+            case '>' -> LookAndFeelController.cycleRight();
+            case '<' -> LookAndFeelController.cycleLeft();
         }
     }
 

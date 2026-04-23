@@ -3,10 +3,7 @@ package Model;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 
 @Setter
 @Getter
@@ -182,13 +179,7 @@ public class PPUStateMachine {
             }
             lineSprites.add(new ScanlineSprite(entry, i));
         }
-        lineSprites.sort((lhs, rhs) -> {
-            int xCmp = Integer.compare(lhs.entry.getXPos(), rhs.entry.getXPos());
-            if (xCmp != 0) {
-                return xCmp;
-            }
-            return Integer.compare(lhs.oamIndex, rhs.oamIndex);
-        });
+        lineSprites.sort(Comparator.comparingInt((ScanlineSprite lhs) -> lhs.entry.getXPos()).thenComparingInt(lhs -> lhs.oamIndex));
     }
 
     private void evaluateWindowForLine() {

@@ -28,3 +28,15 @@ application {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.withType<Jar>() {
+    configurations["compileClasspath"].forEach { file: File ->
+        from(zipTree(file.absoluteFile))
+    }
+}
+
+tasks.jar {
+    manifest {
+        manifest.attributes["Main-Class"] = "Main"
+    }
+}

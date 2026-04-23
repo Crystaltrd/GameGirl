@@ -53,7 +53,7 @@ public class TileView extends JPanel {
                 rc.x = x + ((7 - bit) * LookAndFeelController.scale);
                 rc.y = y + ((tileY / 2) * LookAndFeelController.scale);
                 rc.width = rc.height = LookAndFeelController.scale;
-                g.setColor(new Color(LookAndFeelController.defaultPalette[pixel]));
+                g.setColor(new Color(LookAndFeelController.defaultPalette[0][pixel]));
                 g.fillRect(rc.x, rc.y, rc.width, rc.height);
             }
         }

@@ -52,7 +52,7 @@ public class PPU extends BusMemory {
     }
 
     private void blankScreen() {
-        Arrays.fill(framebuffer, LookAndFeelController.defaultPalette[0]);
+        Arrays.fill(framebuffer, LookAndFeelController.defaultPalette[0][0]);
     }
 
     public void requestFrameRepaint() {
