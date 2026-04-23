@@ -32,7 +32,7 @@ public class Timer extends BusMemory {
         };
         if (timer_update && (tacReg & (1 << 2)) != 0) {
             timaReg++;
-            if (timaReg == 0xFF) {
+            if (timaReg > 0xFF) {
                 timaReg = tmaReg & 0xFF;
                 context.getCpu().setTimerInt(true);
             }

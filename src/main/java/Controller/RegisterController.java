@@ -31,6 +31,7 @@ public class RegisterController implements ActionListener {
             case "TMA" -> String.format("%02X", viewctx.getContext().getTimer().getTmaReg());
             case "TAC" -> String.format("%02X", viewctx.getContext().getTimer().getTacReg());
             case "LY" -> String.format("%02X", viewctx.getContext().getIoRegisters().getLcd().getLY());
+            case "IE" -> Integer.toBinaryString(viewctx.getContext().getCpu().getIE());
             case "LCDC" ->
                     String.format("%s", Integer.toBinaryString(viewctx.getContext().getIoRegisters().getLcd().getLCDC() & 0xFF));
             case null, default -> "TODO";

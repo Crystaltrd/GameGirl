@@ -45,7 +45,15 @@ public class Joypad {
             case JP_LEFT -> dpadNibble = BLeftButtonMask.setBoolean(dpadNibble, pressed);
             case JP_UP -> dpadNibble = SelectUpButtonMask.setBoolean(dpadNibble, pressed);
             case JP_DOWN -> dpadNibble = StartDownButtonMask.setBoolean(dpadNibble, pressed);
+            case JP_NONE -> {
+                return;
+            }
         }
+        if (button == JOYP_BTNS.JP_A || button == JOYP_BTNS.JP_B || button == JOYP_BTNS.JP_SEL || button == JOYP_BTNS.JP_START) {
+            if (ButtonMask.isSet(highNibble))
+                context.getCpu().setJoypadInt(true);
+        } else if (DPADMask.isSet(highNibble))
+            context.getCpu().setJoypadInt(true);
     }
 
 }
