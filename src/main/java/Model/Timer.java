@@ -19,6 +19,9 @@ public class Timer extends BusMemory {
     public void tick() {
         int prev_div = divReg;
         divReg++;
+        if ((prev_div & (1 << 12)) != 0 && (divReg & (1 << 12)) == 0) {
+            context.getApu().clockFrameSequencer();
+        }
 
         boolean timer_update = switch (tacReg & 0b11) {
             case 0 -> ((prev_div & (1 << 9)) != 0) && ((divReg & (1 << 9)) == 0);
@@ -50,7 +53,12 @@ public class Timer extends BusMemory {
     @Override
     public void write(int address, int value) {
         switch (HardwareRegisters.findByValue(address)) {
-            case DIV -> divReg = 0;
+            case DIV -> {
+                if ((divReg & (1 << 12)) != 0) {
+                    context.getApu().clockFrameSequencer();
+                }
+                divReg = 0;
+            }
             case TIMA -> timaReg = value;
             case TMA -> tmaReg = value;
             case TAC -> tacReg = value;

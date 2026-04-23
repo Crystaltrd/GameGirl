@@ -26,8 +26,8 @@ public class Emulator {
     private Catridge catridge;
     private CPU cpu;
     private PPU ppu;
-    private APU apu;
     private Timer timer;
+    private APU apu;
     private IORegisters ioRegisters;
     private byte[] WRAM = new byte[0x2000];
     private byte[] ZeroPage = new byte[0x80];
@@ -35,12 +35,11 @@ public class Emulator {
     private byte currchar = 0;
 
     public Emulator() {
-        init();
+        init(null);
     }
 
     public Emulator(Process pr) {
-        init();
-        process = pr;
+        init(pr);
     }
 
     public void push(int val) {
@@ -76,11 +75,12 @@ public class Emulator {
         write(address, value & 0xFF);
     }
 
-    public void init() {
+    private void init(Process pr) {
+        process = pr;
         cpu = new CPU(this);
         ppu = new PPU(this);
-        apu = new APU(this);
         timer = new Timer(this);
+        apu = new APU(this, pr == null && !Boolean.getBoolean("gamegirl.audio.disabled"));
         ioRegisters = new IORegisters(this);
     }
 
@@ -89,11 +89,10 @@ public class Emulator {
             for (int j = 0; j < 4; j++) {
                 ticks++;
                 timer.tick();
-                ppu.tick();
                 apu.tick();
+                ppu.tick();
             }
             ioRegisters.getDma().tick();
-
         }
     }
 
@@ -194,13 +193,15 @@ public class Emulator {
                     System.out.println("CPU stopped");
                     return 0;
                 }
-                //if (RegisterRenderer != null)
+                //if(RegisterRenderer != null)
                 // RegisterRenderer.update();
             }
             return 0;
         } catch (Exception e) {
             System.err.println(e.getMessage());
             return 1;
+        } finally {
+            apu.shutdown();
         }
     }
 }

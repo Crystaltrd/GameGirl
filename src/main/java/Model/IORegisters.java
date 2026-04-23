@@ -12,13 +12,11 @@ public class IORegisters extends BusMemory {
     private int[] data = new int[0xFF];
     private DMA dma;
     private LCD lcd;
-    private APU apu;
 
     IORegisters(Emulator context) {
         dma = new DMA(context);
         lcd = new LCD(context);
         joyp = new Joypad(context);
-        this.apu = context.getApu();
         this.context = context;
     }
 
@@ -40,8 +38,8 @@ public class IORegisters extends BusMemory {
 
     @Override
     public int read(int address) {
-        if (Commons.isBetween(address,0x10,0x3F)) {
-            return apu.read(address);
+        if (Commons.isBetween(address, 0x10, 0x26) || Commons.isBetween(address, 0x30, 0x3F)) {
+            return context.getApu().read(address);
         }
         return switch (HardwareRegisters.findByValue(address)) {
             case P1JOYP -> joyp.getByte();
@@ -67,9 +65,9 @@ public class IORegisters extends BusMemory {
 
     @Override
     public void write(int address, int value) {
-        if (Commons.isBetween(address,0x0010,0x003F)) {
-            apu.write(address,value);
-
+        if (Commons.isBetween(address, 0x10, 0x26) || Commons.isBetween(address, 0x30, 0x3F)) {
+            context.getApu().write(address, value);
+            return;
         }
         switch (HardwareRegisters.findByValue(address)) {
             case P1JOYP -> joyp.setByte(value);

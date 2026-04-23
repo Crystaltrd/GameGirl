@@ -23,5 +23,5 @@ public class LookAndFeelController {
             0xe0f8d0
     };
     public static int[] defaultPalette = paletteGrayscale;
-    
+
 }
