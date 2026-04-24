@@ -80,7 +80,7 @@ That's all folks!
 ## Authors <a name = "authors"></a>
 
 - [@Crystaltrd(AIT MEDDOUR Fouâd-Eddine)](https://github.com/Crystaltrd) - Idea & Initial work
-- [@Yams-01(SMAIL Samy)](https://github.com/yams-01) – Audio Processing Unit (APU)
+- [@Yams-01(SMAIL Samy)](https://github.com/yams-01) – Audio Processing Unit (APU) and Writeup
 
 See also the list of [contributors](https://github.com/Crystaltrd/Gamegirl/contributors) who participated in this
 project.
