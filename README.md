@@ -30,7 +30,9 @@
 
 ## About <a name = "about"></a>
 
-A badly written Nintendo Game Boy™emulator written from scratch in Java. That is all
+A badly written Nintendo Game Boy™emulator written from scratch in Java. That is all!
+
+A [Writeup](assets/Writeup.pdf) is provided to document the conception of the app.
 
 ## Getting Started <a name = "getting_started"></a>
 
