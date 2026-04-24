@@ -89,7 +89,7 @@ A special thanks to:
 
 - [@mtbelkebir](https://github.com/mtbelkebir) For helping out with Gradle and Unit testing!
 - [GBDev](https://gbdev.io/) For their amazing documentation and for their help in the Discord server, especially
-  `ArkoSammy12` and `Delay`
+  `ArkoSammy12`, `PinoBatch` and `Delay`
 - [Mr Tarek Melliti](https://www.ibisc.univ-evry.fr/~tmelliti/) For supervising this project.
 
 And anyone who contributed in any way shape or form to the making of this project!!!
