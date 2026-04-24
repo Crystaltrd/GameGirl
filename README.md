@@ -60,11 +60,11 @@ That's all folks!
 
 ## Usage <a name="usage"></a>
 
-- WASD for Up, Left, Down, Right.
-- K L for the A and B buttons respectively.
-- Enter and Escape for Select and Start.
-- R to pick a new ROM.
-- \< and \> to cycle through color palettes, might need a rom (R)estart to take effect.
+- <kbd>WASD</kbd> for Up, Left, Down, Right.
+- <kbd>K</kbd><kbd>L</kbd> for the A and B buttons respectively.
+- <kbd>Enter</kbd> and <kbd>Escape</kbd> for Select and Start.
+- <kbd>R</kbd> to pick a new ROM.
+- <kbd>\<</kbd> and <kbd>\></kbd> to cycle through color palettes, might need a rom (R)estart to take effect.
 
 ## Built Using <a name = "built_using"></a>
 
